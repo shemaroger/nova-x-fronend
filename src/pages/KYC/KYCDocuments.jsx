@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getKycDocumentsByUser, approveKycDocument, rejectKycDocument } from '../Service/api';
+import { getKycDocumentsByUser, approveKycDocument } from '../Service/api';
 import { useParams, useNavigate } from 'react-router-dom'
 
 const KYCDocumentsPage = () => {

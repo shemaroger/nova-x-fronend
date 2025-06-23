@@ -273,9 +273,9 @@ const LoginApp = () => {
                     localStorage.setItem('name', response.data.user.name);
                     localStorage.setItem('user', response.data.user.user_type);
                     if (response.data.user.user_type == "investor") {
-                        window.location.href = '/dashboard';
+                        window.location.href = '/dashboard/get-sme-users';
                     } else if (response.data.user.user_type == "sme") {
-                        window.location.href = '/dashboard';
+                        window.location.href = '/dashboard/addanalysis';
                     } else if (response.data.user.user_type == "admin") {
                         window.location.href = '/dashboard/admin-dashboard';
                     } else {
