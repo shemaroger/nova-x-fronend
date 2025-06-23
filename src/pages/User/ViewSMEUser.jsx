@@ -206,15 +206,15 @@ const AllUsersAccountsPage = () => {
         }
     };
 
-    const handleRejectUser = async (user) => {
-        try {
-            toast.success(`${user.business_name} has been rejected`);
-            fetchUsers();
-        } catch (err) {
-            console.log(err)
-            toast.error(`Failed to reject ${user.business_name}`);
-        }
-    };
+    // const handleRejectUser = async (user) => {
+    //     try {
+    //         toast.success(`${user.business_name} has been rejected`);
+    //         fetchUsers();
+    //     } catch (err) {
+    //         console.log(err)
+    //         toast.error(`Failed to reject ${user.business_name}`);
+    //     }
+    // };
 
     const handleRefresh = () => {
         toast.info('Refreshing SME accounts...');
@@ -517,7 +517,7 @@ const AllUsersAccountsPage = () => {
                                                                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
                                                             >
                                                                 <Eye className="w-4 h-4 mr-3 text-violet-600" />
-                                                                View Details
+                                                                View KYC Doc
                                                             </button>
 
 
@@ -531,10 +531,10 @@ const AllUsersAccountsPage = () => {
                                                                         }}
                                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 w-full text-left"
                                                                     >
-                                                                        <CheckCircle className="w-4 h-4 mr-3 text-green-600" />
+                                                                        <CheckCircle className="w-4 h-4 mr-1 text-green-600" />
                                                                         Approve Application
                                                                     </button>
-                                                                    <button
+                                                                    {/* <button
                                                                         onClick={() => {
                                                                             handleRejectUser(user);
                                                                             setOpenDropdown(null);
@@ -543,7 +543,7 @@ const AllUsersAccountsPage = () => {
                                                                     >
                                                                         <XCircle className="w-4 h-4 mr-3 text-red-600" />
                                                                         Reject Application
-                                                                    </button>
+                                                                    </button> */}
                                                                 </>
                                                             )}
                                                         </div>

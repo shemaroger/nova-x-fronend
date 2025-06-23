@@ -207,12 +207,12 @@ const AllUsersAccountsPage = () => {
     };
 
     // Open rejection modal
-    const handleRejectUser = (user) => {
-        setSelectedUserForRejection(user);
-        setRejectionReason('');
-        setShowRejectModal(true);
-        setOpenDropdown(null);
-    };
+    // const handleRejectUser = (user) => {
+    //     setSelectedUserForRejection(user);
+    //     setRejectionReason('');
+    //     setShowRejectModal(true);
+    //     setOpenDropdown(null);
+    // };
 
     // Close rejection modal
     const closeRejectModal = () => {
@@ -551,13 +551,13 @@ const AllUsersAccountsPage = () => {
                                                                         <CheckCircle className="w-4 h-4 mr-1 text-green-600" />
                                                                         Approve Application
                                                                     </button>
-                                                                    <button
+                                                                    {/* <button
                                                                         onClick={() => handleRejectUser(user)}
                                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 w-full text-left"
                                                                     >
                                                                         <XCircle className="w-4 h-4 mr-3 text-red-600" />
                                                                         Reject Application
-                                                                    </button>
+                                                                    </button> */}
                                                                 </>
                                                             )}
                                                         </div>

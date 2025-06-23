@@ -263,19 +263,19 @@ const KYCDocumentsPage = () => {
         }
     };
 
-    const handleRejectDocument = async (document) => {
-        const reason = window.prompt('Enter rejection reason:');
-        if (reason) {
-            try {
-                await rejectKycDocument(document.id, reason);
-                toast.success(`${document.document_type_display} has been rejected`);
-                fetchDocuments();
-            } catch (err) {
-                console.log(err);
-                toast.error(`Failed to reject document`);
-            }
-        }
-    };
+    // const handleRejectDocument = async (document) => {
+    //     const reason = window.prompt('Enter rejection reason:');
+    //     if (reason) {
+    //         try {
+    //             await rejectKycDocument(document.id, reason);
+    //             toast.success(`${document.document_type_display} has been rejected`);
+    //             fetchDocuments();
+    //         } catch (err) {
+    //             console.log(err);
+    //             toast.error(`Failed to reject document`);
+    //         }
+    //     }
+    // };
 
     const handleRefresh = () => {
         toast.info('Refreshing KYC documents...');
@@ -592,10 +592,10 @@ const KYCDocumentsPage = () => {
                                                                         }}
                                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 w-full text-left"
                                                                     >
-                                                                        <CheckCircle className="w-4 h-4 mr-3 text-green-600" />
+                                                                        <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
                                                                         Approve Document
                                                                     </button>
-                                                                    <button
+                                                                    {/* <button
                                                                         onClick={() => {
                                                                             handleRejectDocument(document);
                                                                             setOpenDropdown(null);
@@ -604,7 +604,7 @@ const KYCDocumentsPage = () => {
                                                                     >
                                                                         <XCircle className="w-4 h-4 mr-3 text-red-600" />
                                                                         Reject Document
-                                                                    </button>
+                                                                    </button> */}
                                                                 </>
                                                             )}
                                                         </div>
