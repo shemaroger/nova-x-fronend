@@ -60,8 +60,6 @@ const AllUsersAccountsPage = () => {
             const response = await getall_investors();
 
             let usersList = [];
-
-            // Check the correct format
             if (Array.isArray(response?.data)) {
                 usersList = response.data;
             } else if (response?.users) {
@@ -115,6 +113,12 @@ const AllUsersAccountsPage = () => {
         return matchesSearch && matchesStatus;
     });
 
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        if (imagePath.startsWith('http')) return imagePath;
+        const baseUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:8000';
+        return `${baseUrl}${imagePath}`;
+    };
     // Sorting logic
     const sortedUsers = [...filteredUsers].sort((a, b) => {
         let aValue = a[sortBy];
@@ -192,7 +196,7 @@ const AllUsersAccountsPage = () => {
     // Handle user actions
     const handleViewUser = (user) => {
         toast.info(`Viewing profile for ${user.full_name}`);
-        navigate(`/dashboard/kycdocuments/${user.id}`);
+        navigate(`/dashboard/kycdocuments/${user.user_id}`);
     };
 
     const handleApproveUser = async (user) => {
@@ -455,7 +459,7 @@ const AllUsersAccountsPage = () => {
                                                 <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                                                     {user.profile_image ? (
                                                         <img
-                                                            src={user.profile_image}
+                                                            src={getImageUrl(user.profile_image)}
                                                             alt={user.full_name}
                                                             className="w-full h-full object-cover"
                                                         />

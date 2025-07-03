@@ -453,14 +453,10 @@ const SubscriptionPlanPage = () => {
                                             ))}
                                         </select>
                                     </div>
-
-                                    {/* Features */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Features *
                                         </label>
-
-                                        {/* Add Feature Input */}
                                         <div className="flex space-x-2 mb-3">
                                             <input
                                                 type="text"
@@ -478,8 +474,6 @@ const SubscriptionPlanPage = () => {
                                                 <Plus className="w-4 h-4" />
                                             </button>
                                         </div>
-
-                                        {/* Features List */}
                                         {formData.features.length > 0 && (
                                             <div className="space-y-2 mb-3">
                                                 {formData.features.map((feature, index) => (

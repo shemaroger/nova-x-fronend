@@ -11,6 +11,12 @@ import SubscriptionPlan from '../pages/Subscription/SubscriptionPlan';
 import Subscription from '../pages/Subscription/Subscription';
 import PaymentsManagement from '../pages/Payment/PaymentsManagement';
 import AdminDashboard from '../pages/components/AdminDashboard';
+import SMEProfile from '../pages/User/SMEProfilePage';
+import InvestorProfile from '../pages/Invester/InvestorProfilePage';
+import UserLogs from '../pages/User/Userlogs';
+import InvestorDashboard from '../pages/Invester/InvestorDashboard';
+import SMEDashboard from '../pages/User/SMEDashboard';
+import NotificationsManagementPage from '../pages/Notification/NotificationsManagement';
 
 export const routes = [
     { path: '/signup', component: Signup, name: 'Signup' },
@@ -32,12 +38,12 @@ export const routes = [
             { path: 'subscription', component: Subscription, name: 'subscription' },
             { path: 'payments-management', component: PaymentsManagement, name: 'payments-management' },
             { path: 'admin-dashboard', component: AdminDashboard, name: 'admin-dashboard' },
-
-
-
-
-
-
+            { path: 'sme-profile', component: SMEProfile, name: 'sme-profile' },
+            { path: 'investor-profile', component: InvestorProfile, name: 'investor-profile' },
+            { path: 'user-logs', component: UserLogs, name: 'user-logs' },
+            { path: 'investor-dashboard', component: InvestorDashboard, name: 'investor-dashboard' },
+            { path: 'sme-dashboard', component: SMEDashboard, name: 'sme-dashboard' },
+            { path: 'notifications-management', component: NotificationsManagementPage, name: 'notifications-management' },
         ]
     },
 

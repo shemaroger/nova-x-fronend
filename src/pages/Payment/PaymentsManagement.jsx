@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getPayment, approvePayment } from '../Service/api';
+import { getPayment, approvePayment, createNotification } from '../Service/api';
 
 const PaymentsManagementPage = () => {
     const [payments, setPayments] = useState([]);
@@ -176,12 +176,20 @@ const PaymentsManagementPage = () => {
     };
 
     // Handle payment approval/rejection
-    const handlePaymentAction = async (paymentId, action) => {
+    const handlePaymentAction = async (payment, action) => {
         setIsProcessing(true);
 
         try {
 
-            await await approvePayment(paymentId);
+            console.log("Payment action:", payment.user)
+
+            await createNotification({
+                user: payment.user,
+                message: `The payment request submitted by the user has been ${action}d by the administrator. Please review the changes if necessary.`,
+
+            });
+            await await approvePayment(payment.id);
+
 
             toast.success(`Payment ${action}d successfully!`);
             await fetchPayments();
@@ -398,7 +406,7 @@ const PaymentsManagementPage = () => {
                             {payment.status === 'requires_action' && payment.requires_approval && !payment.approved_by && (
                                 <div className="flex space-x-4">
                                     <button
-                                        onClick={() => handlePaymentAction(payment.id, 'approve')}
+                                        onClick={() => handlePaymentAction(payment, 'approve')}
                                         disabled={isProcessing}
                                         className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                                     >
@@ -599,7 +607,7 @@ const PaymentsManagementPage = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center space-x-2 justify-end">
                                                     <button
-                                                        onClick={() => handleViewPayment(payment)}
+                                                        onClick={() => handleViewPayment(payment.id)}
                                                         className="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"
                                                         title="View Details"
                                                     >
@@ -609,7 +617,7 @@ const PaymentsManagementPage = () => {
                                                     {payment.status === 'requires_action' && payment.requires_approval && !payment.approved_by && (
                                                         <>
                                                             <button
-                                                                onClick={() => handlePaymentAction(payment.id, 'approve')}
+                                                                onClick={() => handlePaymentAction(payment, 'approve')}
                                                                 disabled={isProcessing}
                                                                 className="text-green-600 hover:text-green-900 p-2 rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
                                                                 title="Approve Payment"

@@ -184,14 +184,10 @@ export const registerSME = async (userData) => {
     }
 };
 
-
-
-
-
 // Business Registration
 export const registerBusiness = async (userData) => {
     try {
-        const response = await api.post('/auth/business/register/', userData);
+        const response = await axios.post(`${API_BASE_URL}/auth/business/register/`, userData);
 
         // Check for success and store auth data
         if (response.data.success && response.data.data) {
@@ -201,7 +197,6 @@ export const registerBusiness = async (userData) => {
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
         }
-
         return response.data;
     } catch (error) {
         throw handleError(error);
@@ -211,8 +206,7 @@ export const registerBusiness = async (userData) => {
 // General Registration (legacy support)
 export const register = async (userData) => {
     try {
-        const response = await api.post('/auth/register/', userData);
-
+        const response = await axios.post(`${API_BASE_URL}/auth/register/`, userData);
         // Check for success and store auth data
         if (response.data.success && response.data.data) {
             storeAuthData(response.data);
@@ -228,17 +222,16 @@ export const register = async (userData) => {
     }
 };
 
-// Login - Updated to match your backend response structure
+// Login
 export const login = async (credentials) => {
     try {
-        const response = await api.post(`${API_BASE_URL}/auth/login/`, credentials);
+        const response = await axios.post(`${API_BASE_URL}/auth/login/`, credentials);
         if (response.data.success && response.data.data) {
             storeAuthData(response.data);
         } else if (response.data.access) {
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
         }
-
         return response.data;
     } catch (error) {
         throw handleError(error);
@@ -414,6 +407,64 @@ export const getSMEUser_info = async (user_id) => {
     }
 };
 
+export const getInvestorUserDetail = async (user_id) => {
+    try {
+        const response = await api.get(`/investor/${user_id}/user_info/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+export const getSMEUpdate = async (user_id, smedata) => {
+    try {
+        const response = await api.put(`/sme/${user_id}/`, smedata, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            timeout: 60000,
+        });
+
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const updateInvestorProfile = async (user_id, investordata) => {
+    try {
+        const response = await api.put(`/investor/${user_id}/`, investordata, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            timeout: 60000,
+        });
+
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+
+
+export const updateImage = async (user_id, imageData) => {
+    try {
+        const response = await api.post(`/applications/upload-profile-image/`, imageData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            timeout: 60000,
+        });
+
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
 
 
 export const getall_sme_active = async () => {
@@ -450,7 +501,36 @@ export const uploadAnalyisisDocument = async (AnalysisData = {}) => {
         throw handleError(error);
     }
 };
+//======================User Registration Logs======================
 
+export const getAllRegistrationLogs = async () => {
+    try {
+        const response = await api.get('/registration-logs/');
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Optionally: Get logs filtered by user ID
+export const getRegistrationLogsByUser = async (userId) => {
+    try {
+        const response = await api.get(`/registration-logs/?user=${userId}`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Optionally: Get logs filtered by status
+export const getRegistrationLogsByStatus = async (status) => {
+    try {
+        const response = await api.get(`/registration-logs/?status=${status}`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
 
 // =================== Subscription ===================
 
@@ -555,6 +635,47 @@ export const approvePayment = async (paymentId) => {
 
 
 
+//======================Notificaitons=================
+export const getNotifications = async () => {
+    try {
+        const response = await api.get('/notifications/');
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const markAsRead = async (notificationId) => {
+    try {
+        const response = await api.patch(`/notifications/${notificationId}/mark_as_read/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+export const createNotification = async (notificationData) => {
+    try {
+        const response = await api.post('/notifications/', notificationData);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+
+
+export const getMySubscription = async () => {
+    try {
+        const response = await api.get('/subscriptions/me/');
+        return response.data;
+    } catch (error) {
+        if (error.response && error.response.status === 404) {
+            return null; // No subscription found
+        }
+        throw error; // Unexpected error
+    }
+};
 
 
 

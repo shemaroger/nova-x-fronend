@@ -50,6 +50,24 @@ const Dashboard = ({ activePage }) => {
             roles: ['admin'],
         },
         {
+            name: 'Dashboard',
+            icon: <Film className="w-5 h-5" />,
+            path: '/dashboard/investor-dashboard',
+            description: 'Overview Dashboard.',
+            badge: null,
+            color: 'from-indigo-500 to-purple-500',
+            roles: ['investor'],
+        },
+        {
+            name: 'Dashboard',
+            icon: <Film className="w-5 h-5" />,
+            path: '/dashboard/sme-dashboard',
+            description: 'Overview Dashboard.',
+            badge: null,
+            color: 'from-indigo-500 to-purple-500',
+            roles: ['sme'],
+        },
+        {
             name: 'Account Management',
             icon: <Users className="w-5 h-5" />,
             path: '',
@@ -107,24 +125,16 @@ const Dashboard = ({ activePage }) => {
             color: 'from-red-500 to-red-600',
             roles: ['sme'],
         },
-        // {
-        //     name: 'Investor Chat',
-        //     icon: <Film className="w-5 h-5" />,
-        //     path: '/dashboard',
-        //     description: 'Chat with potential investors.',
-        //     badge: 5,
-        //     color: 'from-indigo-500 to-purple-500',
-        //     roles: ['sme'],
-        // },
         {
-            name: 'My Investments',
+            name: 'Notification',
             icon: <BarChart2 className="w-5 h-5" />,
-            path: '/dashboard/',
-            description: 'Track Your Investments',
+            path: '/dashboard/notifications-management',
+            description: 'Manage your Notifications.',
             badge: null,
-            color: 'from-emerald-500 to-teal-500',
-            roles: ['investor'],
+            color: 'from-red-500 to-red-600',
+            roles: ['sme'],
         },
+
         {
             name: 'Investment Opportunities',
             icon: <Folder className="w-5 h-5" />,
@@ -133,6 +143,14 @@ const Dashboard = ({ activePage }) => {
 
             color: 'from-yellow-500 to-orange-500',
             roles: ['investor'],
+        },
+        {
+            name: 'User Logs',
+            icon: <Bell className="w-5 h-5" />,
+            path: '/dashboard/user-logs',
+            description: 'View User Logs',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['admin'],
         }
     ];
     const getFilteredMenuItems = () => {
@@ -197,47 +215,33 @@ const Dashboard = ({ activePage }) => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Sidebar */}
-            <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-blue-900 border-r border-blue-800 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 } lg:translate-x-0 shadow-xl`}>
-
-                {/* Logo Section - Fixed */}
-                <div className="flex items-center justify-between h-20 px-6 border-b border-gray-200 bg-gradient-to-r from-violet-50/50 to-purple-50/30">
-                    {/* Logo Container */}
-                    <div className="flex items-center space-x-3">
-                        <div className="flex items-center justify-center w-22  rounded-xl ">
-                            <img
-                                src="/images/nova-logo.png"
-                                alt="Nova X Logo"
-                                className="w-24 object-contain"
-                                onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                }}
-                            />
-                            {/* Fallback Logo */}
-                            <div className="hidden items-center justify-center w-8 h-8 text-white font-bold text-lg">
-                                N
-                            </div>
-                        </div>
-                        <div className="flex flex-col mt-3 items-center">
-                            <h1 className="text-x font-bold text-gray-900 leading-tight">Welcome back</h1>
-                            <span className="text-xs text-gray-500 font-medium">Dashboard</span>
+                <div className="flex items-center justify-center h-40 px-6 border-b border-blue-800 bg-blue-900">
+                    <div className="flex items-center text-white justify-center w-48 h-16 rounded-xl">
+                        <img
+                            src="/images/logox.png"
+                            alt="Nova X Logo"
+                            className="object-contain"
+                            onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                            }}
+                        />
+                        <div className="hidden items-center justify-center w-12 h-12 text-white font-bold text-2xl bg-blue-500 rounded-xl">
+                            N
                         </div>
                     </div>
-
-                    {/* Close Button - Mobile Only */}
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                        className="lg:hidden absolute top-4 right-4 p-2 text-blue-100 hover:text-white hover:bg-blue-700 rounded-lg transition-all duration-200"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-
-                {/* Navigation */}
                 <nav className="mt-6 px-4 space-y-1 h-[calc(100vh-140px)] overflow-y-auto">
                     <div className="mb-6">
-                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-3">
+                        <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider px-3 mb-3">
                             Main Menu ({userdata.role})
                         </h3>
                     </div>
@@ -245,7 +249,6 @@ const Dashboard = ({ activePage }) => {
                     <div className="space-y-1">
                         {menuItems.map((item, index) => (
                             <div key={`${item.path}-${index}`} className="relative group">
-                                {/* Main Menu Item */}
                                 <div
                                     className="relative group"
                                     onMouseEnter={() => setHoveredItem(`${item.path}-${index}`)}
@@ -258,16 +261,15 @@ const Dashboard = ({ activePage }) => {
                                             transition-all duration-300 ease-out relative overflow-hidden
                                             transform hover:scale-[1.02] hover:shadow-lg
                                             ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem)))
-                                                ? 'bg-gradient-to-r from-violet-50 to-purple-50 text-violet-700 shadow-md shadow-violet-500/10 border border-violet-100'
-                                                : 'text-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-50/50 hover:text-gray-900 hover:shadow-md'
+                                                ? 'bg-white text-blue-900 shadow-md shadow-white/10 border border-gray-200'
+                                                : 'text-blue-100 hover:bg-blue-800/50 hover:text-white hover:shadow-md'
                                             }
                                         `}
                                     >
-                                        {/* Background Animation */}
                                         <div className={`
                                             absolute inset-0 bg-gradient-to-r ${item.color} opacity-0 
                                             transition-opacity duration-300 rounded-xl
-                                            ${hoveredItem === `${item.path}-${index}` && activeMenuItem !== item.path ? 'opacity-5' : ''}
+                                            ${hoveredItem === `${item.path}-${index}` && activeMenuItem !== item.path ? 'opacity-10' : ''}
                                         `}></div>
 
                                         <div className="flex items-center space-x-3 relative z-10">
@@ -275,8 +277,8 @@ const Dashboard = ({ activePage }) => {
                                             <div className={`
                                                 relative p-2 rounded-lg transition-all duration-300
                                                 ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem)))
-                                                    ? `bg-gradient-to-br ${item.color} text-white shadow-lg shadow-violet-500/25`
-                                                    : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:shadow-md'
+                                                    ? `bg-gradient-to-br ${item.color} text-white shadow-lg shadow-blue-500/25`
+                                                    : 'bg-blue-800/50 text-blue-200 group-hover:bg-blue-700/60 group-hover:shadow-md'
                                                 }
                                             `}>
                                                 {item.icon}
@@ -290,18 +292,18 @@ const Dashboard = ({ activePage }) => {
                                                 <div className="flex items-center space-x-2">
                                                     <span className={`
                                                         font-semibold text-sm transition-colors duration-200
-                                                        ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem))) ? 'text-violet-900' : 'text-gray-900'}
+                                                        ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem))) ? 'text-blue-900' : 'text-blue-100'}
                                                     `}>
                                                         {item.name}
                                                     </span>
                                                     {(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem))) && (
-                                                        <Zap className="w-3 h-3 text-violet-500 animate-pulse" />
+                                                        <Zap className="w-3 h-3 text-blue-300 animate-pulse" />
                                                     )}
                                                 </div>
                                                 {item.description && (
                                                     <p className={`
                                                         text-xs transition-colors duration-200 mt-0.5
-                                                        ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem))) ? 'text-violet-600' : 'text-gray-500'}
+                                                        ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem))) ? 'text-gray-600' : 'text-blue-300'}
                                                     `}>
                                                         {item.description}
                                                     </p>
@@ -313,8 +315,8 @@ const Dashboard = ({ activePage }) => {
                                                 <span className={`
                                                     px-2 py-1 rounded-full text-xs font-bold transition-all duration-200
                                                     ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem)))
-                                                        ? 'bg-violet-200 text-violet-800 shadow-sm'
-                                                        : 'bg-red-100 text-red-600 group-hover:bg-red-200'
+                                                        ? 'bg-blue-400/30 text-white shadow-sm'
+                                                        : 'bg-red-500/80 text-white group-hover:bg-red-400'
                                                     }
                                                 `}>
                                                     {item.badge}
@@ -322,16 +324,16 @@ const Dashboard = ({ activePage }) => {
                                             )}
                                             {item.hasSubItems ? (
                                                 expandedMenus[item.path] ? (
-                                                    <ChevronUp className="w-4 h-4 text-violet-600 transition-all duration-300" />
+                                                    <ChevronUp className="w-4 h-4 text-blue-200 transition-all duration-300" />
                                                 ) : (
-                                                    <ChevronDown className="w-4 h-4 text-gray-400 transition-all duration-300" />
+                                                    <ChevronDown className="w-4 h-4 text-blue-300 transition-all duration-300" />
                                                 )
                                             ) : (
                                                 <ChevronRight className={`
                                                     w-4 h-4 transition-all duration-300
                                                     ${(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem)))
-                                                        ? 'text-violet-600 transform translate-x-1'
-                                                        : 'text-gray-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1'
+                                                        ? 'text-blue-200 transform translate-x-1'
+                                                        : 'text-blue-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-1'
                                                     }
                                                 `} />
                                             )}
@@ -339,13 +341,13 @@ const Dashboard = ({ activePage }) => {
 
                                         {/* Active Indicator Line */}
                                         {(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem))) && (
-                                            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-violet-500 to-purple-600 rounded-r-full shadow-lg shadow-violet-500/50"></div>
+                                            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-white to-blue-200 rounded-r-full shadow-lg shadow-white/50"></div>
                                         )}
                                     </button>
 
                                     {/* Hover Effect Line */}
                                     {hoveredItem === `${item.path}-${index}` && activeMenuItem !== item.path && !item.subItems?.some(sub => sub.path === activeMenuItem) && (
-                                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-gray-300 to-gray-400 rounded-r-full transition-all duration-300"></div>
+                                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-gradient-to-b from-blue-300 to-blue-200 rounded-r-full transition-all duration-300"></div>
                                     )}
                                 </div>
 
@@ -360,8 +362,8 @@ const Dashboard = ({ activePage }) => {
                                                     w-full flex items-center justify-between p-2.5 rounded-lg text-left 
                                                     transition-all duration-200 relative border-l-2 mb-3
                                                     ${activeMenuItem === subItem.path
-                                                        ? 'bg-violet-50 text-violet-700 border-violet-300 shadow-sm'
-                                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-gray-200 hover:border-gray-300'
+                                                        ? 'bg-blue-500/20 text-white border-blue-300 shadow-sm'
+                                                        : 'text-blue-200 hover:bg-blue-700/30 hover:text-white border-blue-600 hover:border-blue-400'
                                                     }
                                                 `}
                                             >
@@ -369,12 +371,12 @@ const Dashboard = ({ activePage }) => {
                                                     <div className="flex items-center space-x-2">
                                                         <span className={`
                                                             font-medium text-sm transition-colors duration-200
-                                                            ${activeMenuItem === subItem.path ? 'text-violet-800' : 'text-gray-700'}
+                                                            ${activeMenuItem === subItem.path ? 'text-white' : 'text-blue-200'}
                                                         `}>
                                                             {subItem.name}
                                                         </span>
                                                         {activeMenuItem === subItem.path && (
-                                                            <div className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-pulse"></div>
+                                                            <div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-pulse"></div>
                                                         )}
                                                     </div>
 
@@ -383,8 +385,8 @@ const Dashboard = ({ activePage }) => {
                                                 <ChevronRight className={`
                                                     w-3 h-3 transition-all duration-300
                                                     ${activeMenuItem === subItem.path
-                                                        ? 'text-violet-600 transform translate-x-0.5'
-                                                        : 'text-gray-400 opacity-0 group-hover:opacity-100'
+                                                        ? 'text-blue-200 transform translate-x-0.5'
+                                                        : 'text-blue-300 opacity-0 group-hover:opacity-100'
                                                     }
                                                 `} />
                                             </button>
@@ -397,20 +399,20 @@ const Dashboard = ({ activePage }) => {
                 </nav>
 
                 {/* User Profile */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-                    <div className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
-                        <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-pink-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-sm">
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700 bg-blue-800/50">
+                    <div className="flex items-center space-x-3 p-2 rounded-xl hover:bg-blue-700/40 cursor-pointer transition-colors">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center ring-2 ring-blue-300 shadow-sm">
                             <span className="text-white text-sm font-medium">
                                 {userdata.first_name?.[0]?.toUpperCase()}{userdata.last_name?.[0]?.toUpperCase()}
                             </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                            <p className="text-sm font-medium text-white truncate">
                                 {userdata.first_name} {userdata.last_name}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">{userdata.role}</p>
+                            <p className="text-xs text-blue-200 truncate">{userdata.role}</p>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <ChevronRight className="w-4 h-4 text-blue-300" />
                     </div>
                 </div>
             </div>
@@ -427,8 +429,6 @@ const Dashboard = ({ activePage }) => {
                             >
                                 <Menu className="w-5 h-5" />
                             </button>
-
-                            {/* Modern Search Bar */}
                             <div className="relative hidden md:flex items-center">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <Search className="h-5 w-5 text-gray-400" />
@@ -472,11 +472,7 @@ const Dashboard = ({ activePage }) => {
                                 <div className="w-px h-6 bg-gray-200"></div>
                             </div>
 
-                            {/* Notifications */}
-                            <button className="relative p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
-                                <Bell className="w-5 h-5" />
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                            </button>
+
 
                             {/* Settings */}
                             <button className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200">
@@ -511,7 +507,29 @@ const Dashboard = ({ activePage }) => {
                                             </p>
                                             <p className="text-sm text-gray-500">{userdata.email}</p>
                                         </div>
+                                        {userdata.role === 'Sme' && (
+                                            <div className="border-t border-gray-100 py-1">
+                                                <a
+                                                    href="/dashboard/sme-profile"
+                                                    className="flex items-center px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer w-full text-left"
+                                                >
+                                                    <User className="w-4 h-4 mr-3 text-blue-600" />
+                                                    SME profile
+                                                </a>
+                                            </div>
+                                        )}
 
+                                        {userdata.role === 'Investor' && (
+                                            <div className="border-t border-gray-100 py-1">
+                                                <a
+                                                    href="/dashboard/investor-profile"
+                                                    className="flex items-center px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer w-full text-left"
+                                                >
+                                                    <User className="w-4 h-4 mr-3 text-blue-600" />
+                                                    Investor profile
+                                                </a>
+                                            </div>
+                                        )}
                                         <div className="border-t border-gray-50 py-1">
                                             <button
                                                 onClick={handleLogout}
@@ -533,7 +551,6 @@ const Dashboard = ({ activePage }) => {
                 </main>
             </div>
 
-            {/* Mobile Overlay */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"

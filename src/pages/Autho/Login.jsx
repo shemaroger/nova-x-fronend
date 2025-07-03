@@ -159,7 +159,6 @@ const LoginForm = ({ data, setData, onSubmit, errors, loading }) => {
 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                        {/* Space for remember me checkbox if needed */}
                     </div>
                     <button
                         type="button"
@@ -266,14 +265,13 @@ const LoginApp = () => {
                     window.location.href = '/addkyc';
                 } else {
                     toast.success("Login successful. Welcome back!")
-
                     localStorage.setItem('user_id', response.data.user.id);
                     localStorage.setItem('email', response.data.user.email);
                     localStorage.setItem('profile_data', JSON.stringify(response.data.user.profile_data));
                     localStorage.setItem('name', response.data.user.name);
                     localStorage.setItem('user', response.data.user.user_type);
                     if (response.data.user.user_type == "investor") {
-                        window.location.href = '/dashboard/get-sme-users';
+                        window.location.href = '/dashboard/investor-dashboard';
                     } else if (response.data.user.user_type == "sme") {
                         window.location.href = '/dashboard/addanalysis';
                     } else if (response.data.user.user_type == "admin") {
@@ -317,10 +315,6 @@ const LoginApp = () => {
             setLoading(false);
         }
     };
-
-
-
-
     return (
         <div className="min-h-screen flex p-5">
             <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -340,5 +334,4 @@ const LoginApp = () => {
         </div>
     );
 };
-
 export default LoginApp;

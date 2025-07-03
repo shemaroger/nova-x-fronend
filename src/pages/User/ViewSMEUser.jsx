@@ -42,7 +42,7 @@ const AllUsersAccountsPage = () => {
     const [sortBy, setSortBy] = useState('created_at');
     const [sortOrder, setSortOrder] = useState('desc');
     const [currentPage, setCurrentPage] = useState(1);
-    const [usersPerPage] = useState(10);
+    const [usersPerPage] = useState(5);
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [openDropdown, setOpenDropdown] = useState(null);
     const navigate = useNavigate();
@@ -186,10 +186,17 @@ const AllUsersAccountsPage = () => {
         }
     };
 
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        if (imagePath.startsWith('http')) return imagePath;
+        const baseUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:8000';
+        return `${baseUrl}${imagePath}`;
+    };
+
     // Handle user actions
     const handleViewUser = (user) => {
         toast.info(`Viewing profile for ${user.business_name}`);
-        navigate(`/dashboard/kycdocuments/${user.id}`);
+        navigate(`/dashboard/kycdocuments/${user.user_id}`);
     };
 
 
@@ -205,16 +212,6 @@ const AllUsersAccountsPage = () => {
             toast.error(`Failed to approve ${user.business_name}`);
         }
     };
-
-    // const handleRejectUser = async (user) => {
-    //     try {
-    //         toast.success(`${user.business_name} has been rejected`);
-    //         fetchUsers();
-    //     } catch (err) {
-    //         console.log(err)
-    //         toast.error(`Failed to reject ${user.business_name}`);
-    //     }
-    // };
 
     const handleRefresh = () => {
         toast.info('Refreshing SME accounts...');
@@ -424,7 +421,7 @@ const AllUsersAccountsPage = () => {
                                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                                                     {user.profile_image ? (
                                                         <img
-                                                            src={user.profile_image}
+                                                            src={getImageUrl(user.profile_image)}
                                                             alt={user.business_name}
                                                             className="w-full h-full object-cover"
                                                         />

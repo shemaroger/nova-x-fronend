@@ -65,7 +65,6 @@ const SubscriptionPage = () => {
                 plansData = [response];
             }
 
-            // Filter only active plans and process data
             plansData = plansData
                 .filter(plan => plan.is_active)
                 .map(plan => ({

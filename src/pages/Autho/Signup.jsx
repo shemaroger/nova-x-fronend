@@ -367,7 +367,14 @@ const BusinessStep1Form = ({ data, setData, onNext, onBack, errors }) => {
     return (
         <div className="space-y-6">
             <ProgressSteps currentStep={1} accountType="business" />
-
+            {/* Company Logo Upload */}
+            {/* <FileUpload
+                label="Company Logo (Optional)"
+                onFileSelect={(file) => updateStep1('profileImage', file)}
+                selectedFile={data.step1.profileImage}
+                error={errors.profileImage}
+                accept="image/*"
+            /> */}
 
             <TextArea
                 label="Business Description"
@@ -1032,9 +1039,6 @@ const SignUpApp = () => {
                     response = await registerSME(registrationData);
                 }
             }
-
-            console.log('Registration response:', response);
-
             if (response.success) {
                 toast.success('Registration successful')
                 navigate("/login")

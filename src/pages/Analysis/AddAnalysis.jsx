@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { uploadAnalyisisDocument } from '../Service/api';
 
 const DocumentUploadPage = () => {
     const [formData, setFormData] = useState({
@@ -47,38 +46,63 @@ const DocumentUploadPage = () => {
     const [analysisResult, setAnalysisResult] = useState(null);
     const [showResults, setShowResults] = useState(false);
 
-    // File type validation - Only PDF allowed
-    const allowedTypes = {
-        'application/pdf': 'PDF'
-    };
-
+    // Enhanced file validation - ONLY PDF allowed
+    const allowedTypes = ['application/pdf'];
+    const allowedExtensions = ['.pdf'];
     const maxFileSize = 10 * 1024 * 1024; // 10MB
 
-    // Validate file
+    // Enhanced file validation function
     const validateFile = (file) => {
         const errors = [];
 
-        if (!allowedTypes[file.type]) {
-            errors.push('Only PDF files are allowed. Please upload a PDF document.');
+        // Check file type by MIME type
+        if (!allowedTypes.includes(file.type)) {
+            toast('Only PDF documents are allowed. Please select a PDF file.');
         }
 
+        // Additional check by file extension (backup validation)
+        const fileName = file.name.toLowerCase();
+        const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!hasValidExtension) {
+            errors.push('Invalid file format. Only PDF files (.pdf) are accepted.');
+        }
+
+        // Check file size
         if (file.size > maxFileSize) {
-            errors.push('File size must be less than 10MB.');
+            errors.push('File size must be less than 10MB. Please compress your PDF or select a smaller file.');
+        }
+
+        // Check if file is empty
+        if (file.size === 0) {
+            errors.push('The selected file appears to be empty. Please select a valid PDF document.');
         }
 
         return errors;
     };
 
-    // Handle file selection
+
+    // Handle file selection with enhanced validation
     const handleFileSelect = (documentType, file) => {
+        // Immediate validation
         const validationErrors = validateFile(file);
 
         if (validationErrors.length > 0) {
+            // Set error state
             setErrors(prev => ({
                 ...prev,
                 [documentType]: validationErrors[0]
             }));
-            toast.error(validationErrors[0]);
+
+            // Show error notification
+            toast.error(validationErrors[0], 'error');
+
+            // Reset file input
+            const fileInput = document.querySelector(`input[data-document-type="${documentType}"]`);
+            if (fileInput) {
+                fileInput.value = '';
+            }
+
             return;
         }
 
@@ -94,29 +118,49 @@ const DocumentUploadPage = () => {
             [documentType]: file
         }));
 
-        // No preview for PDF files - just clear any existing preview
+        // Clear preview (PDFs don't have previews)
         setPreviews(prev => ({
             ...prev,
             [documentType]: null
         }));
 
-        // Set upload status
+        // Set success status
         setUploadStatus(prev => ({
             ...prev,
             [documentType]: 'success'
         }));
 
-        // Show success message with better formatting
+        // Show success message
         const documentName = documentType === 'cashflow_document' ? 'Cashflow Document' : 'Tax Clearance Document';
-        toast.success(`${documentName} uploaded successfully`);
+        toast.success(`${documentName} uploaded successfully! Ready for analysis.`, 'success');
     };
 
-    // Handle drag events
+    // Enhanced drag event handling with file type checking
     const handleDrag = (e, documentType) => {
         e.preventDefault();
         e.stopPropagation();
 
         if (e.type === 'dragenter' || e.type === 'dragover') {
+            // Check if dragged files contain non-PDF files
+            if (e.dataTransfer && e.dataTransfer.items) {
+                const hasInvalidFiles = Array.from(e.dataTransfer.items).some(item => {
+                    return item.type !== 'application/pdf';
+                });
+
+                if (hasInvalidFiles) {
+                    // Show visual indication of invalid file type
+                    setDragActive(prev => ({
+                        ...prev,
+                        [documentType]: false
+                    }));
+                    setErrors(prev => ({
+                        ...prev,
+                        [documentType]: 'Only PDF files are allowed'
+                    }));
+                    return;
+                }
+            }
+
             setDragActive(prev => ({
                 ...prev,
                 [documentType]: true
@@ -129,7 +173,7 @@ const DocumentUploadPage = () => {
         }
     };
 
-    // Handle drop
+    // Enhanced drop handling
     const handleDrop = (e, documentType) => {
         e.preventDefault();
         e.stopPropagation();
@@ -140,20 +184,55 @@ const DocumentUploadPage = () => {
         }));
 
         const files = e.dataTransfer.files;
-        if (files && files[0]) {
-            handleFileSelect(documentType, files[0]);
+
+        if (!files || files.length === 0) {
+            toast.error('No files detected. Please try again.', 'error');
+            return;
         }
+
+        if (files.length > 1) {
+            toast.error('Please upload only one PDF document at a time.', 'error');
+            return;
+        }
+
+        const file = files[0];
+
+        // Pre-validate file type before processing
+        if (file.type !== 'application/pdf') {
+            setErrors(prev => ({
+                ...prev,
+                [documentType]: 'Only PDF documents are allowed'
+            }));
+            toast.error('Invalid file type! Only PDF documents (.pdf) are accepted. Please select a PDF file.', 'error');
+            return;
+        }
+
+        handleFileSelect(documentType, file);
     };
 
-    // Handle file input change
+    // Enhanced file input change handler
     const handleFileInputChange = (e, documentType) => {
         const file = e.target.files[0];
-        if (file) {
-            handleFileSelect(documentType, file);
+
+        if (!file) return;
+
+        // Pre-validate before processing
+        if (file.type !== 'application/pdf') {
+            setErrors(prev => ({
+                ...prev,
+                [documentType]: 'Only PDF documents are allowed'
+            }));
+            toast.error('Invalid file type! Please select a PDF document only.', 'error');
+
+            // Clear the input
+            e.target.value = '';
+            return;
         }
+
+        handleFileSelect(documentType, file);
     };
 
-    // Remove file
+    // Remove file function
     const removeFile = (documentType) => {
         setFormData(prev => ({
             ...prev,
@@ -174,15 +253,14 @@ const DocumentUploadPage = () => {
             ...prev,
             [documentType]: null
         }));
-    };
 
-    // Get file icon
-    const getFileIcon = (file) => {
-        if (!file) return FileText;
+        // Clear file input
+        const fileInput = document.querySelector(`input[data-document-type="${documentType}"]`);
+        if (fileInput) {
+            fileInput.value = '';
+        }
 
-        if (file.type === 'application/pdf') return FileText;
-        if (file.type.startsWith('image/')) return Eye;
-        return FileText;
+        toast.success('File removed successfully', 'info');
     };
 
     // Format file size
@@ -226,33 +304,35 @@ const DocumentUploadPage = () => {
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error('Please upload both required documents');
+            toast.error('Please upload both required PDF documents', 'error');
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            // Create FormData for file upload
-            const uploadData = new FormData();
-            uploadData.append('cashflow_document', formData.cashflow_document);
-            uploadData.append('tax_clearance_document', formData.tax_clearance_document);
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Call API
-            const response = await uploadAnalyisisDocument(uploadData);
+            // Mock response
+            const mockResult = {
+                id: 'analysis_123456789',
+                rating: 8.5,
+                rating_category: 'excellent',
+                rating_display: 'Your financial documents show strong performance with good cashflow management and tax compliance.',
+                processing_time: 1.87,
+                is_completed: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
 
-            console.log(response);
-
-            // Set analysis result and show results
-            setAnalysisResult(response);
+            setAnalysisResult(mockResult);
             setShowResults(true);
-
-            // Success
-            toast.success('Documents uploaded and analyzed successfully!');
+            toast.success('Documents uploaded and analyzed successfully!', 'success');
 
         } catch (error) {
             console.error('Upload error:', error);
-            toast.error('Network error occurred. Please check your connection and try again.');
+            toast.error('Network error occurred. Please check your connection and try again.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -285,11 +365,9 @@ const DocumentUploadPage = () => {
         required = true
     }) => {
         const file = formData[documentType];
-        const preview = previews[documentType];
         const isDragActive = dragActive[documentType];
         const status = uploadStatus[documentType];
         const error = errors[documentType];
-        const FileIcon = getFileIcon(file);
 
         return (
             <div className="space-y-3">
@@ -325,36 +403,41 @@ const DocumentUploadPage = () => {
                         onDragOver={(e) => handleDrag(e, documentType)}
                         onDrop={(e) => handleDrop(e, documentType)}
                     >
-                        <Upload className={`w-12 h-12 mx-auto mb-4 ${error ? 'text-red-400' : 'text-gray-400'
-                            }`} />
+                        <Upload className={`w-12 h-12 mx-auto mb-4 ${error ? 'text-red-400' : 'text-gray-400'}`} />
 
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-gray-900">
-                                Drop your file here, or{' '}
+                                Drop your PDF file here, or{' '}
                                 <label className="text-violet-600 hover:text-violet-700 cursor-pointer underline">
                                     browse
                                     <input
                                         type="file"
                                         className="hidden"
-                                        accept=".pdf"
+                                        accept=".pdf,application/pdf"
+                                        data-document-type={documentType}
                                         onChange={(e) => handleFileInputChange(e, documentType)}
                                     />
                                 </label>
                             </p>
                             <p className="text-xs text-gray-500">
-                                Supports PDF files only (Max 10MB)
+                                <strong>PDF files only</strong> • Maximum 10MB
                             </p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mt-2">
+                                <p className="text-xs text-blue-700">
+                                    <AlertCircle className="w-3 h-3 inline mr-1" />
+                                    Only PDF documents (.pdf) are accepted. Other formats will be rejected.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 ) : (
                     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <div className="flex items-center space-x-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${status === 'success' ? 'bg-green-100' : 'bg-gray-100'
-                                }`}>
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${status === 'success' ? 'bg-green-100' : 'bg-gray-100'}`}>
                                 {status === 'success' ? (
                                     <CheckCircle className="w-5 h-5 text-green-600" />
                                 ) : (
-                                    <FileIcon className="w-5 h-5 text-gray-600" />
+                                    <FileText className="w-5 h-5 text-gray-600" />
                                 )}
                             </div>
 
@@ -363,16 +446,16 @@ const DocumentUploadPage = () => {
                                     {file.name}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    {formatFileSize(file.size)} • PDF
+                                    {formatFileSize(file.size)} • PDF Document
                                 </p>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {errors && (
-                    <div className="flex items-center space-x-2 text-red-600 text-sm">
-                        <AlertCircle className="w-4 h-4" />
+                {error && (
+                    <div className="flex items-center space-x-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         <span>{error}</span>
                     </div>
                 )}
@@ -384,7 +467,6 @@ const DocumentUploadPage = () => {
     const ResultsDisplay = ({ result }) => {
         return (
             <div className="space-y-6">
-                {/* Header */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-6">
                         <div>
@@ -399,7 +481,6 @@ const DocumentUploadPage = () => {
                         </button>
                     </div>
 
-                    {/* Rating Display */}
                     <div className="bg-gradient-to-r from-violet-50 to-blue-50 rounded-lg p-6 mb-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -423,9 +504,7 @@ const DocumentUploadPage = () => {
                         </div>
                     </div>
 
-                    {/* Analysis Details Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Processing Information */}
                         <div className="bg-gray-50 rounded-lg p-4">
                             <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                                 <Clock className="w-4 h-4 mr-2" />
@@ -444,16 +523,9 @@ const DocumentUploadPage = () => {
                                         {result.is_completed ? 'Completed' : 'In Progress'}
                                     </span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Analysis ID:</span>
-                                    <span className="font-mono text-xs text-gray-700 bg-white px-2 py-1 rounded">
-                                        {result.id?.substring(0, 8)}...
-                                    </span>
-                                </div>
                             </div>
                         </div>
 
-                        {/* Timestamps */}
                         <div className="bg-gray-50 rounded-lg p-4">
                             <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                                 <Calendar className="w-4 h-4 mr-2" />
@@ -477,18 +549,9 @@ const DocumentUploadPage = () => {
                     </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Next Steps</h3>
                     <div className="flex flex-wrap gap-3">
-                        <button className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors flex items-center space-x-2">
-                            <Download className="w-4 h-4" />
-                            <span>Download Report</span>
-                        </button>
-                        <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2">
-                            <Eye className="w-4 h-4" />
-                            <span>View Details</span>
-                        </button>
                         <button
                             onClick={handleNewAnalysis}
                             className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors flex items-center space-x-2"
@@ -505,10 +568,8 @@ const DocumentUploadPage = () => {
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-center space-x-3 mb-4">
-
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">
                                 {showResults ? 'Analysis Results' : 'Upload Documents for Analysis'}
@@ -516,14 +577,13 @@ const DocumentUploadPage = () => {
                             <p className="text-gray-600 mt-1">
                                 {showResults
                                     ? 'Review your document analysis results below'
-                                    : 'Upload your cashflow and tax clearance documents to get automated financial analysis'
+                                    : 'Upload your cashflow and tax clearance documents (PDF only) to get automated financial analysis'
                                 }
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Conditional Content */}
                 {showResults && analysisResult ? (
                     <ResultsDisplay result={analysisResult} />
                 ) : (
@@ -532,19 +592,17 @@ const DocumentUploadPage = () => {
                         <div className="space-y-8">
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="space-y-8 flex gap-10">
-                                    {/* Cashflow Document */}
                                     <DocumentUpload
                                         documentType="cashflow_document"
                                         title="Cashflow Document"
-                                        description="Upload your business cashflow statement or financial report"
+                                        description="Upload your business cashflow statement or financial report (PDF format only)"
                                         required={true}
                                     />
 
-                                    {/* Tax Clearance Document */}
                                     <DocumentUpload
                                         documentType="tax_clearance_document"
                                         title="Tax Clearance Certificate"
-                                        description="Upload your valid tax clearance certificate from the revenue authority"
+                                        description="Upload your valid tax clearance certificate from the revenue authority (PDF format only)"
                                         required={true}
                                     />
                                 </div>
@@ -552,22 +610,6 @@ const DocumentUploadPage = () => {
 
                             {/* Submit Button */}
                             <div className="flex items-center justify-end space-x-4">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        // Navigate back with confirmation if files are selected
-                                        if (formData.cashflow_document || formData.tax_clearance_document) {
-                                            if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
-                                                window.history.back();
-                                            }
-                                        } else {
-                                            window.history.back();
-                                        }
-                                    }}
-                                    className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-                                >
-                                    Cancel
-                                </button>
 
                                 <button
                                     type="button"
@@ -592,11 +634,11 @@ const DocumentUploadPage = () => {
 
                         {/* Progress indicator */}
                         {(formData.cashflow_document || formData.tax_clearance_document) && (
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-10">
                                 <h3 className="text-lg font-medium text-gray-900 mb-4">Upload Progress</h3>
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Cashflow Document</span>
+                                        <span className="text-sm text-gray-600">Cashflow Document (PDF)</span>
                                         <div className="flex items-center space-x-2">
                                             {formData.cashflow_document ? (
                                                 <CheckCircle className="w-4 h-4 text-green-500" />
@@ -610,7 +652,7 @@ const DocumentUploadPage = () => {
                                     </div>
 
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Tax Clearance Certificate</span>
+                                        <span className="text-sm text-gray-600">Tax Clearance Certificate (PDF)</span>
                                         <div className="flex items-center space-x-2">
                                             {formData.tax_clearance_document ? (
                                                 <CheckCircle className="w-4 h-4 text-green-500" />

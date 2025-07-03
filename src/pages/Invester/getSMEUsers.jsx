@@ -63,22 +63,29 @@ const LoadingSpinner = ({ message = "Loading..." }) => (
 
 // SME Card Component
 const SMECard = ({ sme, onViewDetails }) => {
-    const defaultAvatar = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&h=300&fit=crop&crop=faces";
 
     return (
         <div className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
             <div className="p-6">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                            <img
-                                src={sme.profile_image || defaultAvatar}
-                                alt={`${sme.business_name} logo`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    e.target.src = defaultAvatar;
-                                }}
-                            />
+                        <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
+                            {sme.profile_image ? (
+                                <img
+                                    src={
+                                        sme.profile_image.startsWith('http')
+                                            ? sme.profile_image
+                                            : `http://localhost:8000${sme.profile_image}`
+                                    }
+                                    alt={`${sme.business_name} logo`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        e.target.style.display = 'none'; // Hide broken image
+                                    }}
+                                />
+                            ) : (
+                                <User className="text-gray-400 w-12 h-12" />
+                            )}
                         </div>
                         <div className="flex-1">
                             <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -267,13 +274,20 @@ const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
                             <div className="flex items-start space-x-6">
                                 <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                                     <img
-                                        src={smeDetail.profile_image || defaultAvatar}
+                                        src={
+                                            smeDetail.profile_image
+                                                ? smeDetail.profile_image.startsWith('http')
+                                                    ? smeDetail.profile_image
+                                                    : `http://localhost:8000${smeDetail.profile_image}`
+                                                : defaultAvatar
+                                        }
                                         alt={`${smeDetail.business_name} logo`}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
                                             e.target.src = defaultAvatar;
                                         }}
                                     />
+
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-2xl font-bold text-gray-900 mb-2">
@@ -464,6 +478,7 @@ const SMEListingPage = () => {
         }
     };
 
+
     const applyFilters = () => {
         let filtered = [...allSmeUsers];
 
@@ -497,6 +512,8 @@ const SMEListingPage = () => {
                 return status === filters.status;
             });
         }
+
+
 
         setFilteredSmeUsers(filtered);
 
@@ -635,6 +652,7 @@ const SMEListingPage = () => {
                                 <SMECard
                                     key={sme.id || sme.user_id}
                                     sme={sme}
+
                                     onViewDetails={handleViewDetails}
                                 />
                             ))}
