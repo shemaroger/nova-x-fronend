@@ -15,10 +15,17 @@ import {
     Clock,
     Star,
     Calendar,
-    Award
+    Award,
+    User,
+    Building,
+    CreditCard,
+    DollarSign
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Import your API function
+import { uploadAnalyisisDocument } from '../Service/api'; // Update this path
 
 const DocumentUploadPage = () => {
     const [formData, setFormData] = useState({
@@ -26,7 +33,7 @@ const DocumentUploadPage = () => {
         tax_clearance_document: null
     });
 
-    const [previews, setPreviews] = useState({
+    const [setPreviews] = useState({
         cashflow_document: null,
         tax_clearance_document: null
     });
@@ -57,7 +64,7 @@ const DocumentUploadPage = () => {
 
         // Check file type by MIME type
         if (!allowedTypes.includes(file.type)) {
-            toast('Only PDF documents are allowed. Please select a PDF file.');
+            errors.push('Only PDF documents are allowed. Please select a PDF file.');
         }
 
         // Additional check by file extension (backup validation)
@@ -81,7 +88,6 @@ const DocumentUploadPage = () => {
         return errors;
     };
 
-
     // Handle file selection with enhanced validation
     const handleFileSelect = (documentType, file) => {
         // Immediate validation
@@ -95,7 +101,7 @@ const DocumentUploadPage = () => {
             }));
 
             // Show error notification
-            toast.error(validationErrors[0], 'error');
+            toast.error(validationErrors[0]);
 
             // Reset file input
             const fileInput = document.querySelector(`input[data-document-type="${documentType}"]`);
@@ -132,7 +138,7 @@ const DocumentUploadPage = () => {
 
         // Show success message
         const documentName = documentType === 'cashflow_document' ? 'Cashflow Document' : 'Tax Clearance Document';
-        toast.success(`${documentName} uploaded successfully! Ready for analysis.`, 'success');
+        toast.success(`${documentName} uploaded successfully! Ready for analysis.`);
     };
 
     // Enhanced drag event handling with file type checking
@@ -186,12 +192,12 @@ const DocumentUploadPage = () => {
         const files = e.dataTransfer.files;
 
         if (!files || files.length === 0) {
-            toast.error('No files detected. Please try again.', 'error');
+            toast.error('No files detected. Please try again.');
             return;
         }
 
         if (files.length > 1) {
-            toast.error('Please upload only one PDF document at a time.', 'error');
+            toast.error('Please upload only one PDF document at a time.');
             return;
         }
 
@@ -203,7 +209,7 @@ const DocumentUploadPage = () => {
                 ...prev,
                 [documentType]: 'Only PDF documents are allowed'
             }));
-            toast.error('Invalid file type! Only PDF documents (.pdf) are accepted. Please select a PDF file.', 'error');
+            toast.error('Invalid file type! Only PDF documents (.pdf) are accepted. Please select a PDF file.');
             return;
         }
 
@@ -222,7 +228,7 @@ const DocumentUploadPage = () => {
                 ...prev,
                 [documentType]: 'Only PDF documents are allowed'
             }));
-            toast.error('Invalid file type! Please select a PDF document only.', 'error');
+            toast.error('Invalid file type! Please select a PDF document only.');
 
             // Clear the input
             e.target.value = '';
@@ -260,7 +266,7 @@ const DocumentUploadPage = () => {
             fileInput.value = '';
         }
 
-        toast.success('File removed successfully', 'info');
+        toast.success('File removed successfully');
     };
 
     // Format file size
@@ -274,6 +280,7 @@ const DocumentUploadPage = () => {
 
     // Format date
     const formatDate = (dateString) => {
+        if (!dateString || dateString === "Unknown") return "Unknown";
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
@@ -284,14 +291,21 @@ const DocumentUploadPage = () => {
         });
     };
 
-    // Get rating color
+    // Get rating color and category
     const getRatingColor = (rating) => {
         if (rating >= 8) return 'text-green-600 bg-green-100';
         if (rating >= 6) return 'text-yellow-600 bg-yellow-100';
         return 'text-red-600 bg-red-100';
     };
 
-    // Handle form submission
+    const getRatingCategory = (rating) => {
+        if (rating >= 8) return 'Excellent';
+        if (rating >= 6) return 'Good';
+        if (rating >= 4) return 'Fair';
+        return 'Poor';
+    };
+
+    // Handle form submission with real API
     const handleSubmit = async () => {
         // Validation
         const newErrors = {};
@@ -304,35 +318,54 @@ const DocumentUploadPage = () => {
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error('Please upload both required PDF documents', 'error');
+            toast.error('Please upload both required PDF documents');
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Prepare FormData for multipart/form-data
+            const analysisData = new FormData();
+            analysisData.append('cashflow_document', formData.cashflow_document);
+            analysisData.append('tax_clearance_document', formData.tax_clearance_document);
 
-            // Mock response
-            const mockResult = {
-                id: 'analysis_123456789',
-                rating: 8.5,
-                rating_category: 'excellent',
-                rating_display: 'Your financial documents show strong performance with good cashflow management and tax compliance.',
-                processing_time: 1.87,
-                is_completed: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
+            // Call the real API
+            const result = await uploadAnalyisisDocument(analysisData);
 
-            setAnalysisResult(mockResult);
+            setAnalysisResult(result);
             setShowResults(true);
-            toast.success('Documents uploaded and analyzed successfully!', 'success');
+            toast.success('Documents uploaded and analyzed successfully!');
 
         } catch (error) {
             console.error('Upload error:', error);
-            toast.error('Network error occurred. Please check your connection and try again.', 'error');
+
+            // Handle different types of errors
+            if (error.response) {
+                // Server responded with error status
+                const errorMessage = error.response.data?.error || 'Server error occurred';
+                const errorDetails = error.response.data?.details;
+
+                if (error.response.status === 400) {
+                    toast.error(`Validation Error: ${errorMessage}`);
+                } else if (error.response.status === 503) {
+                    toast.error(`Service Unavailable: ${errorMessage}`);
+                } else if (error.response.status === 500) {
+                    toast.error(`Analysis Error: ${errorMessage}`);
+                } else {
+                    toast.error(`Error: ${errorMessage}`);
+                }
+
+                if (errorDetails) {
+                    console.error('Error details:', errorDetails);
+                }
+            } else if (error.request) {
+                // Request was made but no response
+                toast.error('Network error: Unable to connect to server. Please check your internet connection.');
+            } else {
+                // Something else happened
+                toast.error('An unexpected error occurred. Please try again.');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -463,8 +496,13 @@ const DocumentUploadPage = () => {
         );
     };
 
-    // Results Display Component
+    // Results Display Component with real data
     const ResultsDisplay = ({ result }) => {
+        const details = result.analysis_details || {};
+        const entityInfo = details.entity_info || {};
+        const documentFeatures = details.document_features || {};
+        const dateInfo = details.date_info || {};
+
         return (
             <div className="space-y-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -481,6 +519,7 @@ const DocumentUploadPage = () => {
                         </button>
                     </div>
 
+                    {/* Overall Rating */}
                     <div className="bg-gradient-to-r from-violet-50 to-blue-50 rounded-lg p-6 mb-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -488,7 +527,7 @@ const DocumentUploadPage = () => {
                                     <Award className="w-8 h-8 text-violet-600" />
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-900">Overall Rating</h3>
-                                        <p className="text-sm text-gray-600 capitalize">{result.rating_category}</p>
+                                        <p className="text-sm text-gray-600">{getRatingCategory(result.rating)}</p>
                                     </div>
                                 </div>
                                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-lg font-bold ${getRatingColor(result.rating)}`}>
@@ -497,13 +536,97 @@ const DocumentUploadPage = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-4">
-                            <p className="text-gray-700 text-sm leading-relaxed">
-                                {result.rating_display}
-                            </p>
+                    </div>
+
+                    {/* Entity Information */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                            <Building className="w-5 h-5 mr-2" />
+                            Entity Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <span className="text-sm font-medium text-gray-500">Entity Name:</span>
+                                <p className="text-sm text-gray-900">{details.entity || 'Unknown'}</p>
+                            </div>
+                            <div>
+                                <span className="text-sm font-medium text-gray-500">Account Number:</span>
+                                <p className="text-sm text-gray-900">{entityInfo.account_number || 'Unknown'}</p>
+                            </div>
+                            <div>
+                                <span className="text-sm font-medium text-gray-500">TIN:</span>
+                                <p className="text-sm text-gray-900">{entityInfo.tin || 'Unknown'}</p>
+                            </div>
+                            <div>
+                                <span className="text-sm font-medium text-gray-500">Currency:</span>
+                                <p className="text-sm text-gray-900">{entityInfo.currency || 'Unknown'}</p>
+                            </div>
                         </div>
                     </div>
 
+                    {/* Document Features */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                            <FileText className="w-5 h-5 mr-2" />
+                            Document Analysis
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <span className="text-sm font-medium text-gray-500">Transaction Count</span>
+                                <p className="text-lg font-semibold text-gray-900">{documentFeatures.transaction_count || 0}</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <span className="text-sm font-medium text-gray-500">Credit Count</span>
+                                <p className="text-lg font-semibold text-green-600">{documentFeatures.credit_count || 0}</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <span className="text-sm font-medium text-gray-500">Debit Count</span>
+                                <p className="text-lg font-semibold text-red-600">{documentFeatures.debit_count || 0}</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <span className="text-sm font-medium text-gray-500">Credit/Debit Ratio</span>
+                                <p className="text-lg font-semibold text-blue-600">{documentFeatures.credit_debit_ratio || 0}</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <span className="text-sm font-medium text-gray-500">Closing Balance</span>
+                                <p className="text-lg font-semibold text-gray-900">{documentFeatures.closing_balance || 0}</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <span className="text-sm font-medium text-gray-500">Name Match Score</span>
+                                <p className="text-lg font-semibold text-purple-600">{documentFeatures.name_match_score || 0}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Date Information */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                            <Calendar className="w-5 h-5 mr-2" />
+                            Date Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <span className="text-sm font-medium text-gray-500">Statement Period:</span>
+                                <p className="text-sm text-gray-900">
+                                    {dateInfo.statement_start_date && dateInfo.statement_end_date
+                                        ? `${formatDate(dateInfo.statement_start_date)} - ${formatDate(dateInfo.statement_end_date)}`
+                                        : 'Unknown'
+                                    }
+                                </p>
+                            </div>
+                            <div>
+                                <span className="text-sm font-medium text-gray-500">Tax Clearance Validity:</span>
+                                <p className="text-sm text-gray-900">
+                                    {dateInfo.tax_clearance_valid_from && dateInfo.tax_clearance_valid_to
+                                        ? `${formatDate(dateInfo.tax_clearance_valid_from)} - ${formatDate(dateInfo.tax_clearance_valid_to)}`
+                                        : 'Unknown'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Processing Details */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-gray-50 rounded-lg p-4">
                             <h4 className="font-medium text-gray-900 mb-3 flex items-center">
@@ -512,23 +635,23 @@ const DocumentUploadPage = () => {
                             </h4>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-gray-600">Processing Time:</span>
-                                    <span className="font-medium text-gray-900">
-                                        {result.processing_time?.toFixed(2)} seconds
-                                    </span>
+                                    <span className="text-gray-600">Analysis ID:</span>
+                                    <span className="font-medium text-gray-900">{result.id || 'Unknown'}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Status:</span>
-                                    <span className={`font-medium ${result.is_completed ? 'text-green-600' : 'text-yellow-600'}`}>
-                                        {result.is_completed ? 'Completed' : 'In Progress'}
-                                    </span>
+                                    <span className="font-medium text-green-600">Completed</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Compliance Score:</span>
+                                    <span className="font-medium text-gray-900">{documentFeatures.compliance_score || 0}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="bg-gray-50 rounded-lg p-4">
                             <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                                <Calendar className="w-4 h-4 mr-2" />
+                                <User className="w-4 h-4 mr-2" />
                                 Timeline
                             </h4>
                             <div className="space-y-2 text-sm">
@@ -539,7 +662,7 @@ const DocumentUploadPage = () => {
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="text-gray-600 block">Completed:</span>
+                                    <span className="text-gray-600 block">Updated:</span>
                                     <span className="font-medium text-gray-900">
                                         {formatDate(result.updated_at)}
                                     </span>
@@ -610,7 +733,6 @@ const DocumentUploadPage = () => {
 
                             {/* Submit Button */}
                             <div className="flex items-center justify-end space-x-4">
-
                                 <button
                                     type="button"
                                     onClick={handleSubmit}

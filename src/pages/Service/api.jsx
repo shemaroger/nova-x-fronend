@@ -13,9 +13,12 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('access_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        if (!token) {
+            window.location.href = '/login';
+            return Promise.reject(new Error('No access token found'));
         }
+
+        config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
     (error) => {
@@ -240,20 +243,12 @@ export const login = async (credentials) => {
 
 // Logout
 export const logout = async () => {
-    try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-            await api.post('/auth/logout/', { refresh: refreshToken });
-        }
-    } catch (error) {
-        console.error('Logout error:', error);
-    } finally {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('token_type');
-        localStorage.removeItem('user_data');
-        localStorage.removeItem('auth_data');
-    }
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('token_type');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('auth_data');
+
 };
 
 
@@ -671,11 +666,433 @@ export const getMySubscription = async () => {
         return response.data;
     } catch (error) {
         if (error.response && error.response.status === 404) {
-            return null; // No subscription found
+            return null;
         }
-        throw error; // Unexpected error
+        throw error;
     }
 };
+
+// =================== INVESTMENT ENDPOINTS ===================
+
+// Create a new investment
+export const createInvestment = async (investmentData) => {
+    try {
+        const response = await api.post('/investments/', investmentData);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const updateamountInvestment = async (investmentData) => {
+    try {
+        const response = await api.post('/investments/update-amount/', investmentData);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get all investments for current user
+export const getMyInvestments = async (params = {}) => {
+    try {
+        const response = await api.get('/investments/', {
+            params: params
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get investments by role (investor or sme)
+export const getInvestmentsByRole = async (role = 'all', params = {}) => {
+    try {
+        const response = await api.get('/investments/my-investments/', {
+            params: {
+                role: role,
+                ...params
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get all investments (with filtering)
+export const getAllInvestments = async (params = {}) => {
+    try {
+        const response = await api.get('/investments/', {
+            params: params
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get a specific investment by ID
+export const getInvestment = async (investmentId) => {
+    try {
+        const response = await api.get(`/investments/${investmentId}/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Update an investment
+export const updateInvestment = async (investmentId, updateData) => {
+    try {
+        const response = await api.patch(`/investments/${investmentId}/`, updateData);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Delete an investment
+export const deleteInvestment = async (investmentId) => {
+    try {
+        const response = await api.delete(`/investments/${investmentId}/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// SME responds to investment proposal
+export const smeRespondToInvestment = async (investmentId, action, response = '') => {
+    try {
+        const responseData = await api.post(`/investments/${investmentId}/respond/`, {
+            action: action, // 'accept' or 'reject'
+            response: response
+        });
+        return responseData.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Accept investment proposal (SME)
+export const acceptInvestment = async (investmentId, response = '') => {
+    try {
+        const responseData = await api.post(`/investments/${investmentId}/respond/`, {
+            action: 'accept',
+            response: response
+        });
+        return responseData.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Reject investment proposal (SME)
+export const rejectInvestment = async (investmentId, response = '') => {
+    try {
+        const responseData = await api.post(`/investments/${investmentId}/respond/`, {
+            action: 'reject',
+            response: response
+        });
+        return responseData.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Activate investment after payment
+export const activateInvestment = async (investmentId) => {
+    try {
+        const response = await api.post(`/investments/${investmentId}/activate/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Complete investment
+export const completeInvestment = async (investmentId) => {
+    try {
+        const response = await api.post(`/investments/${investmentId}/complete/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get investment statistics
+export const getInvestmentStats = async () => {
+    try {
+        const response = await api.get('/investments/stats/');
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get investments for a specific SME
+export const getInvestmentsForSME = async (smeId, params = {}) => {
+    try {
+        const response = await api.get('/investments/', {
+            params: {
+                sme: smeId,
+                ...params
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get investments made by a specific investor
+export const getInvestmentsByInvestor = async (investorId, params = {}) => {
+    try {
+        const response = await api.get('/investments/', {
+            params: {
+                investor: investorId,
+                ...params
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get investments by status
+export const getInvestmentsByStatus = async (status, params = {}) => {
+    try {
+        const response = await api.get('/investments/', {
+            params: {
+                status: status,
+                ...params
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get investments by type
+export const getInvestmentsByType = async (investmentType, params = {}) => {
+    try {
+        const response = await api.get('/investments/', {
+            params: {
+                investment_type: investmentType,
+                ...params
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Mark investment payment as completed
+export const markPaymentCompleted = async (investmentId) => {
+    try {
+        const response = await api.patch(`/investments/${investmentId}/`, {
+            payment_completed: true
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Update investment returns paid
+export const updateReturnsPaid = async (investmentId, returnAmount) => {
+    try {
+        const response = await api.patch(`/investments/${investmentId}/`, {
+            returns_paid: returnAmount
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get pending investments for SME
+export const getPendingInvestments = async () => {
+    try {
+        const response = await api.get('/investments/my-investments/', {
+            params: {
+                role: 'sme',
+                status: 'pending'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Get active investments for investor
+export const getActiveInvestments = async () => {
+    try {
+        const response = await api.get('/investments/my-investments/', {
+            params: {
+                role: 'investor',
+                status: 'active'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Cancel investment (if allowed)
+export const cancelInvestment = async (investmentId, reason = '') => {
+    try {
+        const response = await api.patch(`/investments/${investmentId}/`, {
+            status: 'cancelled',
+            investor_notes: reason
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Helper function to calculate investment metrics
+export const calculateInvestmentMetrics = (investment) => {
+    const amount = parseFloat(investment.amount);
+    const returnPercentage = parseFloat(investment.expected_return_percentage);
+    const durationMonths = parseInt(investment.duration_months);
+
+    const annualReturn = amount * (returnPercentage / 100);
+    const totalReturn = annualReturn * (durationMonths / 12);
+    const totalValue = amount + totalReturn;
+    const remainingReturns = Math.max(totalReturn - parseFloat(investment.returns_paid || 0), 0);
+
+    return {
+        principalAmount: amount,
+        expectedAnnualReturn: annualReturn,
+        expectedTotalReturn: totalReturn,
+        totalExpectedValue: totalValue,
+        returnsPaid: parseFloat(investment.returns_paid || 0),
+        remainingReturns: remainingReturns,
+        durationYears: durationMonths / 12,
+        monthlyReturn: totalReturn / durationMonths
+    };
+};
+
+// Helper function to get investment status color
+export const getInvestmentStatusColor = (status) => {
+    const statusColors = {
+        pending: 'bg-yellow-100 text-yellow-800',
+        accepted: 'bg-blue-100 text-blue-800',
+        active: 'bg-green-100 text-green-800',
+        completed: 'bg-gray-100 text-gray-800',
+        rejected: 'bg-red-100 text-red-800',
+        cancelled: 'bg-red-100 text-red-800'
+    };
+    return statusColors[status] || 'bg-gray-100 text-gray-800';
+};
+
+// Helper function to get investment type display name
+export const getInvestmentTypeDisplayName = (type) => {
+    const typeNames = {
+        equity: 'Equity Investment',
+        loan: 'Business Loan',
+        partnership: 'Partnership'
+    };
+    return typeNames[type] || type;
+};
+
+
+
+
+export const getChatRooms = async () => {
+    try {
+        const response = await api.get('/chat-rooms/');
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const createOrGetChatRoom = async (otherUserId) => {
+    try {
+        const response = await api.post('/chat-rooms/', {
+            other_user_id: otherUserId
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const getChatMessages = async (chatRoomId) => {
+    try {
+        const response = await api.get(`/chat-rooms/${chatRoomId}/messages/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+export const sendMessage = async (chatRoomId, content) => {
+    try {
+        const response = await api.post(`/chat-rooms/${chatRoomId}/send_message/`, {
+            content: content
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const markMessagesAsRead = async (chatRoomId) => {
+    try {
+        const response = await api.post(`/chat-rooms/${chatRoomId}/mark_read/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const createMessage = async (chatRoomId, content) => {
+    try {
+        const response = await api.post('/messages/', {
+            chat_room_id: chatRoomId,
+            content: content
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const getAllMessages = async (params = {}) => {
+    try {
+        const response = await api.get('/messages/', {
+            params: params
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

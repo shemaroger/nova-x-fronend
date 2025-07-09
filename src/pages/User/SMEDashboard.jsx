@@ -365,11 +365,7 @@ const SMEDashboard = () => {
                                                     <span className="text-sm text-gray-600">Status:</span>
                                                     {getSubscriptionStatusBadge(mySubscription.status)}
                                                 </div>
-                                                {mySubscription.current_period_end && (
-                                                    <p className="text-sm text-gray-600">
-                                                        {mySubscription.cancel_at_period_end ? 'Ends' : 'Renews'}: {new Date(mySubscription.current_period_end).toLocaleDateString()}
-                                                    </p>
-                                                )}
+
                                                 {mySubscription.cancel_at_period_end && (
                                                     <div className="bg-yellow-100 border border-yellow-300 rounded-md p-2 mt-2">
                                                         <p className="text-sm text-yellow-800 flex items-center">

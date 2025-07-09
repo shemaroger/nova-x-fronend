@@ -14,15 +14,15 @@ import {
     CheckCircle,
     AlertCircle,
     Loader,
-    ChevronDown
+    ChevronDown,
+    DollarSign,
+    TrendingUp,
+    Plus,
+    MessageCircle
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-// Import your actual API functions
-import { getSMEUser_info, getall_sme_active } from '../Service/api';
-
-// Status Badge Component
+import { getSMEUser_info, getall_sme_active, createInvestment, createOrGetChatRoom } from '../Service/api';
 const StatusBadge = ({ status }) => {
     const statusConfig = {
         active: {
@@ -53,7 +53,37 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-// Loading Spinner Component
+// Chat Button Component
+const ChatButton = ({ user, onChatOpen }) => {
+    const handleStartChat = async () => {
+        try {
+            const chatRoom = await createOrGetChatRoom(user.id);
+
+            // If you have a callback to open chat interface
+            if (onChatOpen) {
+                onChatOpen(chatRoom);
+
+                // Or redirect to chat page
+                window.location.href = `/dashboard/chat?room=${chatRoom.id}`;
+            }
+        } catch (error) {
+            console.error('Error starting chat:', error);
+            toast.error('Failed to start chat. Please try again.');
+        }
+    };
+
+    return (
+        <button
+            onClick={handleStartChat}
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+            title={`Start chat with ${user.business_name || user.email}`}
+        >
+            <MessageCircle size={14} className="mr-1" />
+            Chat
+        </button>
+    );
+};
+
 const LoadingSpinner = ({ message = "Loading..." }) => (
     <div className="flex justify-center items-center py-12">
         <Loader className="animate-spin text-blue-600" size={32} />
@@ -61,12 +91,178 @@ const LoadingSpinner = ({ message = "Loading..." }) => (
     </div>
 );
 
+const InvestmentModal = ({ smeDetail, isOpen, onClose, onInvestmentSubmit }) => {
+    const [formData, setFormData] = useState({
+        amount: '',
+    });
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
+
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+
+        setLoading(true);
+        try {
+            const investmentData = {
+                ...formData,
+                amount: parseFloat(formData.amount),
+                sme: smeDetail.user_id
+            };
+
+
+            console.log('investmentData', investmentData)
+            await onInvestmentSubmit(investmentData);
+
+            // Reset form
+            setFormData({
+                amount: '',
+            });
+
+            toast.success('Investment proposal submitted successfully!');
+            onClose();
+        } catch (error) {
+            console.error('Error submitting investment:', error);
+            toast.info(error.message || 'Failed to submit investment proposal');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+    };
+
+
+    if (!isOpen || !smeDetail) return null;
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Header */}
+                <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                    <div className="flex items-center">
+                        <DollarSign className="text-green-600 mr-2" size={24} />
+                        <h2 className="text-xl font-semibold text-gray-900">
+                            Invest in {smeDetail.business_name}
+                        </h2>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                    {/* Business Summary */}
+                    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-4">
+                            <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                {smeDetail.profile_image ? (
+                                    <img
+                                        src={
+                                            smeDetail.profile_image.startsWith('http')
+                                                ? smeDetail.profile_image
+                                                : `http://localhost:8000${smeDetail.profile_image}`
+                                        }
+                                        alt={`${smeDetail.business_name} logo`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <User className="text-gray-400 w-8 h-8 m-4" />
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    {smeDetail.business_name}
+                                </h3>
+                                <p className="text-gray-600">{smeDetail.industry}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Investment Form */}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+
+
+                        {/* Amount */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Investment Amount ($)
+                            </label>
+                            <div className="relative">
+                                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    name="amount"
+                                    value={formData.amount}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter amount (minimum $10)"
+                                    min="100"
+                                    step="0.01"
+                                    className={`pl-10 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 ${errors.amount ? 'border-red-500' : 'border-gray-300'
+                                        }`}
+                                />
+                            </div>
+                            {errors.amount && (
+                                <p className="text-red-500 text-sm mt-1">{errors.amount}</p>
+                            )}
+                        </div>
+
+                        {/* Submit Button */}
+                        <div className="flex justify-end space-x-3 pt-4">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader className="animate-spin mr-2" size={16} />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="mr-2" size={16} />
+                                        Submit Investment
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // SME Card Component
 const SMECard = ({ sme, onViewDetails }) => {
-
     return (
         <div className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
-            <div className="p-6">
+            <div className="p-10 ">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
                         <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
@@ -80,7 +276,7 @@ const SMECard = ({ sme, onViewDetails }) => {
                                     alt={`${sme.business_name} logo`}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
-                                        e.target.style.display = 'none'; // Hide broken image
+                                        e.target.style.display = 'none';
                                     }}
                                 />
                             ) : (
@@ -141,13 +337,21 @@ const SMECard = ({ sme, onViewDetails }) => {
                         </span>
                     </div>
 
-                    <button
-                        onClick={() => onViewDetails(sme.id)}
-                        className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                        <Eye size={14} className="mr-1" />
-                        View Details
-                    </button>
+                    <div className="flex items-center space-x-2">
+                        <ChatButton
+                            user={sme}
+                            onChatOpen={() => {
+                                toast.success('Chat started successfully!');
+                            }}
+                        />
+                        <button
+                            onClick={() => onViewDetails(sme.id)}
+                            className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                            <Eye size={14} className="mr-1" />
+                            View
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -206,7 +410,7 @@ const FilterControls = ({ filters, onFilterChange, industries = [] }) => {
 };
 
 // Detail Modal Component
-const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
+const SMEDetailModal = ({ smeId, isOpen, onClose, onInvestNow }) => {
     const [smeDetail, setSmeDetail] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -237,7 +441,7 @@ const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-200">
                     <h2 className="text-xl font-semibold text-gray-900">Business Details</h2>
@@ -270,31 +474,50 @@ const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
 
                     {!loading && smeDetail && (
                         <div className="space-y-6">
-                            {/* Company Header */}
-                            <div className="flex items-start space-x-6">
-                                <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                    <img
-                                        src={
-                                            smeDetail.profile_image
-                                                ? smeDetail.profile_image.startsWith('http')
-                                                    ? smeDetail.profile_image
-                                                    : `http://localhost:8000${smeDetail.profile_image}`
-                                                : defaultAvatar
-                                        }
-                                        alt={`${smeDetail.business_name} logo`}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            e.target.src = defaultAvatar;
+                            {/* Company Header with Invest Button */}
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-start space-x-6">
+                                    <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                        <img
+                                            src={
+                                                smeDetail.profile_image
+                                                    ? smeDetail.profile_image.startsWith('http')
+                                                        ? smeDetail.profile_image
+                                                        : `http://localhost:8000${smeDetail.profile_image}`
+                                                    : defaultAvatar
+                                            }
+                                            alt={`${smeDetail.business_name} logo`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.src = defaultAvatar;
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                                            {smeDetail.business_name}
+                                        </h3>
+                                        <p className="text-gray-600 mb-3">{smeDetail.industry}</p>
+                                        <StatusBadge status={smeDetail.status || 'active'} />
+                                    </div>
+                                </div>
+
+                                {/* Invest Now Button */}
+                                <div className="flex items-center space-x-3">
+                                    <ChatButton
+                                        user={smeDetail}
+                                        onChatOpen={() => {
+                                            toast.success('Chat started successfully!');
+                                            // You can add additional logic here if needed
                                         }}
                                     />
-
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                        {smeDetail.business_name}
-                                    </h3>
-                                    <p className="text-gray-600 mb-3">{smeDetail.industry}</p>
-                                    <StatusBadge status={smeDetail.status || 'active'} />
+                                    <button
+                                        onClick={() => onInvestNow(smeDetail)}
+                                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors"
+                                    >
+                                        <DollarSign size={20} className="mr-2" />
+                                        Invest Now
+                                    </button>
                                 </div>
                             </div>
 
@@ -315,20 +538,10 @@ const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
                                     <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                                         <Building className="text-gray-400 mr-3" size={20} />
                                         <div>
-                                            <p className="text-sm text-gray-500">Bussiness Name</p>
+                                            <p className="text-sm text-gray-500">Business Name</p>
                                             <p className="font-medium">{smeDetail.business_name}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                                        <Building className="text-gray-400 mr-3" size={20} />
-                                        <div>
-                                            <p className="text-sm text-gray-500">Business Discription </p>
-                                            <p className="font-medium">{smeDetail.business_description}</p>
-                                        </div>
-                                    </div>
-
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                                         <Building className="text-gray-400 mr-3" size={20} />
                                         <div>
@@ -336,7 +549,6 @@ const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
                                             <p className="font-medium">{smeDetail.industry}</p>
                                         </div>
                                     </div>
-
                                     {smeDetail.commencement_date && (
                                         <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                                             <Calendar className="text-gray-400 mr-3" size={20} />
@@ -349,7 +561,6 @@ const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
                                         </div>
                                     )}
                                 </div>
-
                             </div>
 
                             {/* Contact Information */}
@@ -427,10 +638,9 @@ const SMEDetailModal = ({ smeId, isOpen, onClose }) => {
     );
 };
 
-// Main SME Listing Component
 const SMEListingPage = () => {
-    const [allSmeUsers, setAllSmeUsers] = useState([]); // Store all data from API
-    const [filteredSmeUsers, setFilteredSmeUsers] = useState([]); // Store filtered data
+    const [allSmeUsers, setAllSmeUsers] = useState([]);
+    const [filteredSmeUsers, setFilteredSmeUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
         search: '',
@@ -439,14 +649,14 @@ const SMEListingPage = () => {
     });
     const [selectedSMEId, setSelectedSMEId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isInvestmentModalOpen, setIsInvestmentModalOpen] = useState(false);
+    const [selectedSMEForInvestment, setSelectedSMEForInvestment] = useState(null);
     const [industries, setIndustries] = useState([]);
 
-    // Fetch all data once on component mount
     useEffect(() => {
         fetchAllSMEUsers();
     }, []);
 
-    // Apply filters whenever filters change or data changes
     useEffect(() => {
         applyFilters();
     }, [filters, allSmeUsers]);
@@ -478,7 +688,6 @@ const SMEListingPage = () => {
         }
     };
 
-
     const applyFilters = () => {
         let filtered = [...allSmeUsers];
 
@@ -508,12 +717,10 @@ const SMEListingPage = () => {
         // Apply status filter
         if (filters.status) {
             filtered = filtered.filter(sme => {
-                const status = sme.status || 'active'; // Default to active if no status
+                const status = sme.status || 'active';
                 return status === filters.status;
             });
         }
-
-
 
         setFilteredSmeUsers(filtered);
 
@@ -536,6 +743,30 @@ const SMEListingPage = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedSMEId(null);
+    };
+
+    const handleInvestNow = (smeDetail) => {
+        setSelectedSMEForInvestment(smeDetail);
+        setIsInvestmentModalOpen(true);
+        setIsModalOpen(false); // Close the detail modal
+    };
+
+    const handleCloseInvestmentModal = () => {
+        setIsInvestmentModalOpen(false);
+        setSelectedSMEForInvestment(null);
+    };
+
+    const handleInvestmentSubmit = async (investmentData) => {
+        try {
+            // Create the investment using the API service
+            const response = await createInvestment(investmentData);
+
+            console.log('Investment created successfully:', response);
+            return Promise.resolve(response);
+        } catch (error) {
+            console.error('Investment submission error:', error);
+            throw error;
+        }
     };
 
     const handleFilterChange = (newFilters) => {
@@ -562,7 +793,7 @@ const SMEListingPage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="bg-white ">
+            <div className="bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                     <div className="flex items-center justify-between">
                         <div>
@@ -594,7 +825,9 @@ const SMEListingPage = () => {
                     onFilterChange={handleFilterChange}
                     industries={industries}
                 />
+
                 {loading && <LoadingSpinner message="Loading SME businesses..." />}
+
                 {!loading && filteredSmeUsers.length === 0 && (
                     <div className="text-center py-12">
                         <Building className="mx-auto text-gray-400 mb-4" size={48} />
@@ -647,12 +880,11 @@ const SMEListingPage = () => {
                         )}
 
                         {/* Business Cards Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredSmeUsers.map((sme) => (
                                 <SMECard
                                     key={sme.id || sme.user_id}
                                     sme={sme}
-
                                     onViewDetails={handleViewDetails}
                                 />
                             ))}
@@ -660,13 +892,35 @@ const SMEListingPage = () => {
                     </>
                 )}
             </div>
+
+            {/* SME Detail Modal */}
             <SMEDetailModal
                 smeId={selectedSMEId}
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
+                onInvestNow={handleInvestNow}
             />
 
+            {/* Investment Modal */}
+            <InvestmentModal
+                smeDetail={selectedSMEForInvestment}
+                isOpen={isInvestmentModalOpen}
+                onClose={handleCloseInvestmentModal}
+                onInvestmentSubmit={handleInvestmentSubmit}
+            />
 
+            {/* Toast Container */}
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+            />
         </div>
     );
 };

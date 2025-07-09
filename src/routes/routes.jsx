@@ -17,6 +17,10 @@ import UserLogs from '../pages/User/Userlogs';
 import InvestorDashboard from '../pages/Invester/InvestorDashboard';
 import SMEDashboard from '../pages/User/SMEDashboard';
 import NotificationsManagementPage from '../pages/Notification/NotificationsManagement';
+import Investment from '../pages/Invester/investiment';
+import ChatInterface from '../pages/Chat/ChatInterface';
+import SMEChatManagement from '../pages/Chat/SMEChatManagement';
+import AnalysisListing from '../pages/Analysis/AnalysisListing';
 
 export const routes = [
     { path: '/signup', component: Signup, name: 'Signup' },
@@ -44,6 +48,13 @@ export const routes = [
             { path: 'investor-dashboard', component: InvestorDashboard, name: 'investor-dashboard' },
             { path: 'sme-dashboard', component: SMEDashboard, name: 'sme-dashboard' },
             { path: 'notifications-management', component: NotificationsManagementPage, name: 'notifications-management' },
+            { path: 'investment', component: Investment, name: 'investment' },
+            { path: 'chat-interface', component: ChatInterface, name: 'chat-interface' },
+            { path: 'chat', component: ChatInterface, name: 'chat' },
+            { path: 'sme-chat-management', component: SMEChatManagement, name: 'sme-chat-management' },
+            { path: 'analysis-listing', component: AnalysisListing, name: 'analysis-listing' },
+
+
         ]
     },
 

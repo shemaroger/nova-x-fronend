@@ -93,19 +93,10 @@ const PaymentsManagementPage = () => {
             const data = await getPayment();
             console.log('Fetched payments data:', data);
 
-            // Handle different response structures
-            let paymentsData = [];
-            if (Array.isArray(data)) {
-                paymentsData = data;
-            } else if (data?.results && Array.isArray(data.results)) {
-                paymentsData = data.results;
-            } else if (data?.data && Array.isArray(data.data)) {
-                paymentsData = data.data;
-            }
 
-            setPayments(paymentsData);
-            setFilteredPayments(paymentsData);
-            console.log('Fetched payments:', paymentsData);
+            setPayments(data.results);
+            setFilteredPayments(data.results);
+            console.log('Fetched payments:', data.results);
 
         } catch (error) {
             console.error('Error fetching payments:', error);
@@ -220,7 +211,7 @@ const PaymentsManagementPage = () => {
         return (
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text} ${config.border} border`}>
                 <Icon className="w-4 h-4 mr-1" />
-                {status.replace('_', ' ').toUpperCase()}
+                {status}
             </span>
         );
     };
@@ -240,7 +231,7 @@ const PaymentsManagementPage = () => {
                 {/* Modal */}
                 <div className="flex min-h-full items-center justify-center p-4">
                     <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        {/* Close Button */}
+                        {/* Close Button */}    
                         <button
                             onClick={onClose}
                             className="absolute top-4 right-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -270,20 +261,20 @@ const PaymentsManagementPage = () => {
                                     <div className="space-y-4 p-6 bg-gray-50 rounded-lg">
                                         <div>
                                             <label className="text-sm font-medium text-gray-600">User ID</label>
-                                            <p className="font-mono text-lg">{payment.user}</p>
+                                            <p className="font-mono text-lg">{payment.user_info?.id}</p>
                                         </div>
                                         <div>
                                             <label className="text-sm font-medium text-gray-600">Phone Number</label>
-                                            <p className="text-lg">{payment.user_info.contact_phone} </p>
+                                            <p className="text-lg">{payment.user_info?.contact_phone} </p>
                                         </div>
                                         <div>
                                             <label className="text-sm font-medium text-gray-600">Email</label>
-                                            <p className="text-lg">{payment.user_email}</p>
+                                            <p className="text-lg">{payment.user_info?.email}</p>
                                         </div>
                                         {payment.user?.username && (
                                             <div>
                                                 <label className="text-sm font-medium text-gray-600">Username</label>
-                                                <p className="text-lg">{payment.user?.username}</p>
+                                                <p className="text-lg">{payment.user_info?.display_name}</p>
                                             </div>
                                         )}
                                     </div>
@@ -333,11 +324,11 @@ const PaymentsManagementPage = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <div>
                                                 <label className="text-sm font-medium text-purple-700">Plan Name</label>
-                                                <p className="text-lg font-semibold">{payment.subscription_name}</p>
+                                                <p className="text-lg font-semibold">{payment.Subscription_info?.name}</p>
                                             </div>
                                             <div>
                                                 <label className="text-sm font-medium text-purple-700">Duration</label>
-                                                <p className="text-lg">{payment.Subscription_info.duration?.replace('_', ' ')}</p>
+                                                <p className="text-lg">{payment.Subscription_info?.duration?.replace('_', ' ')}</p>
                                             </div>
                                             <div>
                                                 <label className="text-sm font-medium text-purple-700">Plan Price</label>
@@ -553,10 +544,10 @@ const PaymentsManagementPage = () => {
                                                     </div>
                                                     <div className="ml-4">
                                                         <div className="text-sm font-medium text-gray-900">
-                                                            {payment.user?.first_name} {payment.user?.last_name}
+                                                            {payment.user_info?.display_name}
                                                         </div>
                                                         <div className="text-sm text-gray-500">
-                                                            {payment.user?.email}
+                                                            {payment.user_info?.email}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -571,11 +562,11 @@ const PaymentsManagementPage = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="text-sm font-medium text-gray-900">
-                                                    {payment.subscription?.name || 'N/A'}
+                                                    {payment.Subscription_info?.name || 'N/A'}
                                                 </div>
-                                                {payment.subscription?.duration && (
+                                                {payment.Subscription_info?.duration && (
                                                     <div className="text-sm text-gray-500">
-                                                        {payment.subscription.duration.replace('_', ' ')}
+                                                        {payment.Subscription_info?.duration.replace('_', ' ')}
                                                     </div>
                                                 )}
                                             </td>
@@ -607,7 +598,7 @@ const PaymentsManagementPage = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center space-x-2 justify-end">
                                                     <button
-                                                        onClick={() => handleViewPayment(payment.id)}
+                                                        onClick={() => handleViewPayment(payment)}
                                                         className="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"
                                                         title="View Details"
                                                     >

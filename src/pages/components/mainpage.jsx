@@ -3,6 +3,7 @@ import { useNavigate, Outlet } from 'react-router-dom'
 import { Users, Folder, BarChart2, Menu, X, Bell, Search, Settings, LogOut, User, ChevronDown, Home, Film, ChevronRight, Zap, ChevronUp } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { logout } from '../Service/api';
 
 const Dashboard = ({ activePage }) => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -99,6 +100,15 @@ const Dashboard = ({ activePage }) => {
             roles: ['sme'],
         },
         {
+            name: 'View Analyisis ',
+            icon: <Folder className="w-5 h-5" />,
+            path: '/dashboard/analysis-listing',
+            description: 'Document Predict',
+            badge: null,
+            color: 'from-purple-500 to-violet-500',
+            roles: ['sme'],
+        },
+        {
             name: 'Manage Subscriptions',
             icon: <BarChart2 className="w-5 h-5" />,
             path: '/dashboard/subscription-plan',
@@ -134,7 +144,15 @@ const Dashboard = ({ activePage }) => {
             color: 'from-red-500 to-red-600',
             roles: ['sme'],
         },
+        {
+            name: 'My Investment',
+            icon: <Folder className="w-5 h-5" />,
+            path: '/dashboard/investment',
+            description: 'Browse Opportunities',
 
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['investor'],
+        },
         {
             name: 'Investment Opportunities',
             icon: <Folder className="w-5 h-5" />,
@@ -144,6 +162,23 @@ const Dashboard = ({ activePage }) => {
             color: 'from-yellow-500 to-orange-500',
             roles: ['investor'],
         },
+        {
+            name: 'Investor Chats',
+            path: '/dashboard/sme-chat-management',
+            description: 'Investor Chats',
+            icon: <Bell className="w-5 h-5" />,
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['sme'],
+        },
+        {
+            name: 'SME Chats',
+            path: '/dashboard/chat',
+            description: 'Sme Chats',
+            icon: <Bell className="w-5 h-5" />,
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['investor'],
+        },
+
         {
             name: 'User Logs',
             icon: <Bell className="w-5 h-5" />,
@@ -178,8 +213,8 @@ const Dashboard = ({ activePage }) => {
         return () => clearTimeout(timer);
     }, []);
 
-    const handleLogout = () => {
-        localStorage.removeItem('user');
+    const handleLogout = async () => {
+        await logout();
         toast.success('User logged out successfully');
         navigate('/login', { replace: true });
     };
