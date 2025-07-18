@@ -507,6 +507,17 @@ export const getAllRegistrationLogs = async () => {
     }
 };
 
+export const verifyTIN = async (tin) => {
+    try {
+        const response = await api.post('/sme/verify-tin/', {
+            tin: tin.replace(/[\s-]/g, ''),
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
 // Optionally: Get logs filtered by user ID
 export const getRegistrationLogsByUser = async (userId) => {
     try {

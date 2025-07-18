@@ -38,8 +38,120 @@ const ProgressSteps = ({ currentStep, accountType }) => {
     );
 };
 
-const Input = ({ label, type = 'text', placeholder, value, onChange, required = false, error = '' }) => {
+// Validation functions
+const validateEmail = (value) => {
+    if (!value.trim()) {
+        return 'Email is required';
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Please enter a valid email address';
+    }
+    return '';
+};
+
+const validatePhoneNumber = (value, minLength = 9, maxLength = 15) => {
+    if (!value.trim()) {
+        return 'Phone number is required';
+    }
+    if (!/^[0-9]+$/.test(value)) {
+        return 'Phone number can only contain numbers';
+    }
+    if (value.length < minLength) {
+        return `Phone number must be at least ${minLength} digits long`;
+    }
+    if (value.length > maxLength) {
+        return `Phone number must be no more than ${maxLength} digits long`;
+    }
+    return '';
+};
+
+const validateTextInput = (value, minLength = 2, maxLength = 100) => {
+    if (!value.trim()) {
+        return 'This field is required';
+    }
+    if (value.length < minLength) {
+        return `This field must be at least ${minLength} characters long`;
+    }
+    if (value.length > maxLength) {
+        return `This field must be no more than ${maxLength} characters long`;
+    }
+    if (!/^[a-zA-Z\s'-]+$/.test(value)) {
+        return 'This field can only contain letters, spaces, hyphens, and apostrophes';
+    }
+    return '';
+};
+
+const validateBusinessName = (value) => {
+    if (!value.trim()) {
+        return 'Business name is required';
+    }
+    if (value.length < 2) {
+        return 'Business name must be at least 2 characters long';
+    }
+    if (value.length > 100) {
+        return 'Business name must be no more than 100 characters long';
+    }
+    if (!/^[a-zA-Z0-9\s&.,'-]+$/.test(value)) {
+        return 'Business name contains invalid characters';
+    }
+    return '';
+};
+
+const validatePosition = (value) => {
+    if (!value.trim()) {
+        return 'Position is required';
+    }
+    if (value.length < 2) {
+        return 'Position must be at least 2 characters long';
+    }
+    if (value.length > 50) {
+        return 'Position must be no more than 50 characters long';
+    }
+    if (!/^[a-zA-Z\s&.,'-]+$/.test(value)) {
+        return 'Position contains invalid characters';
+    }
+    return '';
+};
+
+const validateTIN = (value) => {
+    if (!value.trim()) {
+        return 'TIN (Tax Identification Number) is required';
+    }
+
+    // Remove any spaces or special characters for validation
+    const cleanTIN = value.replace(/[\s-]/g, '');
+
+    // Rwanda TIN format: 9 digits
+    if (!/^\d{9}$/.test(cleanTIN)) {
+        return 'TIN must be exactly 9 digits';
+    }
+
+    // Basic checksum validation (you can customize this based on Rwanda's TIN algorithm)
+    if (cleanTIN === '000000000' || cleanTIN === '123456789') {
+        return 'Invalid TIN format';
+    }
+
+    return '';
+};
+
+// Updated Input component with real-time validation
+const Input = ({ label, type = 'text', placeholder, value, onChange, required = false, error = '', validation }) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [validationError, setValidationError] = useState(error);
+
+    const handleChange = (e) => {
+        const newValue = e.target.value;
+        onChange(e);
+        if (validation) {
+            const errorMessage = validation(newValue);
+            setValidationError(errorMessage);
+        }
+    };
+
+    // Update validation error when external error prop changes
+    React.useEffect(() => {
+        setValidationError(error);
+    }, [error]);
 
     return (
         <div className="mb-4">
@@ -52,9 +164,8 @@ const Input = ({ label, type = 'text', placeholder, value, onChange, required = 
                     type={showPassword && type === 'password' ? 'text' : type}
                     placeholder={placeholder}
                     value={value}
-                    onChange={onChange}
-                    className={`w-full px-3 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 ${error ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 ${validationError ? 'border-red-500' : 'border-gray-300'}`}
                     required={required}
                 />
                 {type === 'password' && (
@@ -67,7 +178,7 @@ const Input = ({ label, type = 'text', placeholder, value, onChange, required = 
                     </button>
                 )}
             </div>
-            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+            {validationError && <p className="text-red-500 text-xs mt-1">{validationError}</p>}
         </div>
     );
 };
@@ -94,69 +205,6 @@ const TextArea = ({ label, placeholder, value, onChange, required = false, error
         </div>
     </div>
 );
-
-const FileUpload = ({ label, onFileSelect, selectedFile, error = '', accept = "image/*" }) => {
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // Validate file size (5MB max)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('File size must be less than 5MB');
-                return;
-            }
-            onFileSelect(file);
-        }
-    };
-
-    const removeFile = () => {
-        onFileSelect(null);
-    };
-
-    return (
-        <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-                {label}
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                {selectedFile ? (
-                    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-                        <div className="flex items-center">
-                            <Upload size={20} className="text-gray-500 mr-2" />
-                            <span className="text-sm text-gray-700">{selectedFile.name}</span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={removeFile}
-                            className="text-red-500 hover:text-red-700"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-                ) : (
-                    <div>
-                        <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 mb-2">Upload company logo</p>
-                        <p className="text-xs text-gray-500 mb-4">PNG, JPG, GIF up to 5MB</p>
-                        <input
-                            type="file"
-                            accept={accept}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            id="file-upload"
-                        />
-                        <label
-                            htmlFor="file-upload"
-                            className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                            Choose File
-                        </label>
-                    </div>
-                )}
-            </div>
-            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-        </div>
-    );
-};
 
 const Button = ({ children, variant = 'primary', onClick, disabled = false, className = '', loading = false }) => {
     const baseClasses = 'px-6 py-3 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center gap-2';
@@ -341,6 +389,9 @@ const InvestorStep1Form = ({ data, setData, onNext, onBack }) => {
 
 // Business Step 1 Form
 const BusinessStep1Form = ({ data, setData, onNext, onBack, errors }) => {
+    const [tinValidating, setTinValidating] = useState(false);
+    const [tinError, setTinError] = useState('');
+
     const industries = [
         { value: 'technology', label: 'Technology' },
         { value: 'healthcare', label: 'Healthcare' },
@@ -364,17 +415,74 @@ const BusinessStep1Form = ({ data, setData, onNext, onBack, errors }) => {
         }));
     };
 
+    // TIN verification function
+    const verifyTIN = async (tin) => {
+        if (!tin || validateTIN(tin)) {
+            setTinError('');
+            return;
+        }
+
+        setTinValidating(true);
+        setTinError('');
+
+        try {
+            const result = await verifyTIN(tin);
+
+            if (!result.ok) {
+                if (result.error === 'TIN_EXISTS') {
+                    setTinError('TIN already exists. This TIN is already registered in our system.');
+                } else if (result.error === 'INVALID_TIN') {
+                    setTinError('Invalid TIN. Please verify your Tax Identification Number.');
+                } else {
+                    setTinError('Unable to verify TIN. Please try again.');
+                }
+            } else {
+                setTinError('');
+                updateStep1('tin', tin);
+            }
+        } catch (error) {
+            console.error('TIN verification error:', error);
+            setTinError('Network error. Please check your connection and try again.');
+        } finally {
+            setTinValidating(false);
+        }
+    };
+
+    // Debounced TIN verification
+    const debouncedVerifyTIN = React.useCallback(
+        debounce((tin) => verifyTIN(tin), 500),
+        []
+    );
+
+    const handleTINChange = (e) => {
+        const value = e.target.value;
+        updateStep1('tin', value);
+
+        // Clear previous errors
+        setTinError('');
+
+        // Trigger debounced verification
+        if (value.trim()) {
+            debouncedVerifyTIN(value);
+        }
+    };
+
+    // Simple debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
     return (
         <div className="space-y-6">
             <ProgressSteps currentStep={1} accountType="business" />
-            {/* Company Logo Upload */}
-            {/* <FileUpload
-                label="Company Logo (Optional)"
-                onFileSelect={(file) => updateStep1('profileImage', file)}
-                selectedFile={data.step1.profileImage}
-                error={errors.profileImage}
-                accept="image/*"
-            /> */}
 
             <TextArea
                 label="Business Description"
@@ -385,6 +493,34 @@ const BusinessStep1Form = ({ data, setData, onNext, onBack, errors }) => {
                 maxLength={500}
             />
 
+            <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    TIN (Tax Identification Number)<span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Enter your 9-digit TIN"
+                        value={data.step1.tin || ''}
+                        onChange={handleTINChange}
+                        maxLength={11} // Allow for formatting with spaces/dashes
+                        className={`w-full px-3 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 ${tinError || errors.tin ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                        required
+                    />
+                    {tinValidating && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <Loader size={16} className="animate-spin text-blue-600" />
+                        </div>
+                    )}
+                </div>
+                {tinError && <p className="text-red-500 text-xs mt-1">{tinError}</p>}
+                {errors.tin && <p className="text-red-500 text-xs mt-1">{errors.tin}</p>}
+                <p className="text-xs text-gray-500 mt-1">
+                    Enter your Rwanda Revenue Authority Tax Identification Number
+                </p>
+            </div>
+
             <Input
                 label="Commencement Date"
                 type="date"
@@ -392,6 +528,7 @@ const BusinessStep1Form = ({ data, setData, onNext, onBack, errors }) => {
                 onChange={(e) => updateStep1('commencementDate', e.target.value)}
                 required
                 error={errors.commencementDate}
+                max={new Date().toISOString().split('T')[0]}
             />
 
             <Select
@@ -411,7 +548,7 @@ const BusinessStep1Form = ({ data, setData, onNext, onBack, errors }) => {
                 <Button
                     variant="primary"
                     onClick={onNext}
-                    disabled={!data.step1.commencementDate || !data.step1.industry}
+                    disabled={!data.step1.tin || !data.step1.commencementDate || !data.step1.industry || tinValidating || tinError}
                     className="flex-1"
                 >
                     Continue
@@ -421,7 +558,7 @@ const BusinessStep1Form = ({ data, setData, onNext, onBack, errors }) => {
     );
 };
 
-// Business Step 2 Form
+// Business Step 2 Form with validation
 const BusinessStep2Form = ({ data, setData, onNext, onBack, errors }) => {
     const countryCodes = [
         { value: '+250', label: 'RW +250' },
@@ -452,6 +589,7 @@ const BusinessStep2Form = ({ data, setData, onNext, onBack, errors }) => {
                 onChange={(e) => updateStep2('businessName', e.target.value)}
                 required
                 error={errors.businessName}
+                validation={validateBusinessName}
             />
 
             <div className="mb-4">
@@ -472,8 +610,10 @@ const BusinessStep2Form = ({ data, setData, onNext, onBack, errors }) => {
                         type="tel"
                         placeholder="Enter business phone number"
                         value={data.step2.contactPhone}
-                        onChange={(e) => updateStep2('contactPhone', e.target.value)}
-                        className="flex-1 px-3 py-3 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                        onChange={(e) => {
+                            updateStep2('contactPhone', e.target.value);
+                        }}
+                        className={`flex-1 px-3 py-3 border border-l-0 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 ${errors.contactPhone ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
                 </div>
@@ -488,6 +628,7 @@ const BusinessStep2Form = ({ data, setData, onNext, onBack, errors }) => {
                 onChange={(e) => updateStep2('businessEmail', e.target.value)}
                 required
                 error={errors.businessEmail}
+                validation={validateEmail}
             />
 
             <div className="flex gap-4">
@@ -507,7 +648,7 @@ const BusinessStep2Form = ({ data, setData, onNext, onBack, errors }) => {
     );
 };
 
-// Business Step 3 Form
+// Business Step 3 Form with validation
 const BusinessStep3Form = ({ data, setData, onNext, onBack, errors }) => {
     const countryCodes = [
         { value: '+250', label: 'RW +250' },
@@ -538,6 +679,7 @@ const BusinessStep3Form = ({ data, setData, onNext, onBack, errors }) => {
                 onChange={(e) => updateStep3('representativeName', e.target.value)}
                 required
                 error={errors.representativeName}
+                validation={validateTextInput}
             />
 
             <Input
@@ -547,6 +689,7 @@ const BusinessStep3Form = ({ data, setData, onNext, onBack, errors }) => {
                 onChange={(e) => updateStep3('position', e.target.value)}
                 required
                 error={errors.position}
+                validation={validatePosition}
             />
 
             <Input
@@ -556,6 +699,7 @@ const BusinessStep3Form = ({ data, setData, onNext, onBack, errors }) => {
                 value={data.step3.representativeEmail}
                 onChange={(e) => updateStep3('representativeEmail', e.target.value)}
                 error={errors.representativeEmail}
+                validation={(value) => value ? validateEmail(value) : ''}
             />
 
             <div className="mb-4">
@@ -577,7 +721,7 @@ const BusinessStep3Form = ({ data, setData, onNext, onBack, errors }) => {
                         placeholder="If different from business phone"
                         value={data.step3.representativePhone}
                         onChange={(e) => updateStep3('representativePhone', e.target.value)}
-                        className="flex-1 px-3 py-3 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                        className={`flex-1 px-3 py-3 border border-l-0 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 ${errors.representativePhone ? 'border-red-500' : 'border-gray-300'}`}
                     />
                 </div>
                 {errors.representativePhone && <p className="text-red-500 text-xs mt-1">{errors.representativePhone}</p>}
@@ -600,7 +744,7 @@ const BusinessStep3Form = ({ data, setData, onNext, onBack, errors }) => {
     );
 };
 
-// Investor Step 2 Form
+// Investor Step 2 Form with validation
 const InvestorStep2Form = ({ data, setData, onNext, onBack, errors }) => {
     const countryCodes = [
         { value: '+250', label: 'RW +250' },
@@ -631,6 +775,7 @@ const InvestorStep2Form = ({ data, setData, onNext, onBack, errors }) => {
                 onChange={(e) => updateStep2('fullName', e.target.value)}
                 required
                 error={errors.fullName}
+                validation={validateTextInput}
             />
 
             <div className="mb-4">
@@ -652,7 +797,7 @@ const InvestorStep2Form = ({ data, setData, onNext, onBack, errors }) => {
                         placeholder="Enter phone number"
                         value={data.step2.phone}
                         onChange={(e) => updateStep2('phone', e.target.value)}
-                        className="flex-1 px-3 py-3 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                        className={`flex-1 px-3 py-3 border border-l-0 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 ${errors.contactPhone ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
                 </div>
@@ -667,6 +812,7 @@ const InvestorStep2Form = ({ data, setData, onNext, onBack, errors }) => {
                 onChange={(e) => updateStep2('email', e.target.value)}
                 required
                 error={errors.email}
+                validation={validateEmail}
             />
 
             <div className="flex gap-4">
@@ -699,6 +845,29 @@ const FinalStepForm = ({ data, setData, onComplete, onBack, errors, loading, acc
         }));
     };
 
+    const validatePassword = (value) => {
+        if (!value) {
+            return 'Password is required';
+        }
+        if (value.length < 8) {
+            return 'Password must be at least 8 characters';
+        }
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
+            return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+        }
+        return '';
+    };
+
+    const validateConfirmPassword = (value) => {
+        if (!value) {
+            return 'Please confirm your password';
+        }
+        if (value !== data.finalStep.password) {
+            return 'Passwords do not match';
+        }
+        return '';
+    };
+
     return (
         <div className="space-y-6">
             <ProgressSteps currentStep={currentStep} accountType={accountType} />
@@ -711,6 +880,7 @@ const FinalStepForm = ({ data, setData, onComplete, onBack, errors, loading, acc
                 onChange={(e) => updateFinalStep('password', e.target.value)}
                 required
                 error={errors.password}
+                validation={validatePassword}
             />
 
             <Input
@@ -721,6 +891,7 @@ const FinalStepForm = ({ data, setData, onComplete, onBack, errors, loading, acc
                 onChange={(e) => updateFinalStep('confirm_password', e.target.value)}
                 required
                 error={errors.confirm_password}
+                validation={validateConfirmPassword}
             />
 
             <div className="flex items-start">
@@ -858,12 +1029,16 @@ const SignUpApp = () => {
 
         if (!data.step2.phone.trim()) {
             newErrors.contactPhone = 'Phone number is required';
+        } else {
+            const phoneError = validatePhoneNumber(data.step2.phone);
+            if (phoneError) newErrors.contactPhone = phoneError;
         }
 
         if (!data.step2.email.trim()) {
             newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(data.step2.email)) {
-            newErrors.email = 'Please enter a valid email';
+        } else {
+            const emailError = validateEmail(data.step2.email);
+            if (emailError) newErrors.email = emailError;
         }
 
         setErrors(newErrors);
@@ -890,16 +1065,23 @@ const SignUpApp = () => {
 
         if (!data.step2.businessName.trim()) {
             newErrors.businessName = 'Business name is required';
+        } else {
+            const businessNameError = validateBusinessName(data.step2.businessName);
+            if (businessNameError) newErrors.businessName = businessNameError;
         }
 
         if (!data.step2.contactPhone.trim()) {
             newErrors.contactPhone = 'Business phone number is required';
+        } else {
+            const phoneError = validatePhoneNumber(data.step2.contactPhone);
+            if (phoneError) newErrors.contactPhone = phoneError;
         }
 
         if (!data.step2.businessEmail.trim()) {
             newErrors.businessEmail = 'Business email is required';
-        } else if (!/\S+@\S+\.\S+/.test(data.step2.businessEmail)) {
-            newErrors.businessEmail = 'Please enter a valid business email';
+        } else {
+            const emailError = validateEmail(data.step2.businessEmail);
+            if (emailError) newErrors.businessEmail = emailError;
         }
 
         setErrors(newErrors);
@@ -911,14 +1093,26 @@ const SignUpApp = () => {
 
         if (!data.step3.representativeName.trim()) {
             newErrors.representativeName = 'Representative name is required';
+        } else {
+            const nameError = validateTextInput(data.step3.representativeName);
+            if (nameError) newErrors.representativeName = nameError;
         }
 
         if (!data.step3.position.trim()) {
             newErrors.position = 'Position/Title is required';
+        } else {
+            const positionError = validatePosition(data.step3.position);
+            if (positionError) newErrors.position = positionError;
         }
 
-        if (data.step3.representativeEmail && !/\S+@\S+\.\S+/.test(data.step3.representativeEmail)) {
-            newErrors.representativeEmail = 'Please enter a valid email';
+        if (data.step3.representativeEmail) {
+            const emailError = validateEmail(data.step3.representativeEmail);
+            if (emailError) newErrors.representativeEmail = emailError;
+        }
+
+        if (data.step3.representativePhone) {
+            const phoneError = validatePhoneNumber(data.step3.representativePhone);
+            if (phoneError) newErrors.representativePhone = phoneError;
         }
 
         setErrors(newErrors);
@@ -930,8 +1124,10 @@ const SignUpApp = () => {
 
         if (!data.finalStep.password) {
             newErrors.password = 'Password is required';
-        } else if (data.finalStep.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
+        } else if (data.finalStep.password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters';
+        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(data.finalStep.password)) {
+            newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
         }
 
         if (!data.finalStep.confirm_password) {
@@ -1008,7 +1204,6 @@ const SignUpApp = () => {
                 response = await registerInvestor(registrationData);
             } else {
                 registrationData = {
-
                     businessDescription: data.step1.businessDescription,
                     profileImage: data.step1.profileImage,
                     commencementDate: data.step1.commencementDate,
@@ -1200,6 +1395,15 @@ const SignUpApp = () => {
                         <span className="text-gray-600 text-sm">Already have an account? </span>
                         <a href="/login" className="font-medium text-blue-600 hover:text-blue-700 text-sm">
                             Login
+                        </a>
+                    </div>
+                    <div className="text-center">
+                        <span className="text-gray-600 text-sm">if your want back to main page, click here </span>
+                        <a href="/"
+                            className="font-medium text-blue-600 hover:text-blue-700 text-sm"
+                        >
+                            <span className='mr-10'>Home</span>
+
                         </a>
                     </div>
                 </div>

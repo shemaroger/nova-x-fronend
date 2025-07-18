@@ -158,15 +158,7 @@ const LoginForm = ({ data, setData, onSubmit, errors, loading }) => {
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                    </div>
-                    <button
-                        type="button"
-                        className="text-sm text-blue-600 hover:text-blue-700 "
-                        onClick={() => window.location.href = '/forgot-password'}
-                    >
-                        Forgot password?
-                    </button>
+
                 </div>
 
                 <div onKeyPress={handleKeyPress}>
@@ -188,6 +180,15 @@ const LoginForm = ({ data, setData, onSubmit, errors, loading }) => {
                     className="font-medium text-blue-600 hover:text-blue-700 text-sm "
                 >
                     Sign Up
+                </a>
+            </div>
+            <div className="text-center">
+                <span className="text-gray-600 text-sm">if your want back to main page, click here </span>
+                <a href="/"
+                    className="font-medium text-blue-600 hover:text-blue-700 text-sm"
+                >
+                    <span className='mr-10'>Home</span>
+
                 </a>
             </div>
         </div>
@@ -273,7 +274,7 @@ const LoginApp = () => {
                     if (response.data.user.user_type == "investor") {
                         window.location.href = '/dashboard/investor-dashboard';
                     } else if (response.data.user.user_type == "sme") {
-                        window.location.href = '/dashboard/addanalysis';
+                        window.location.href = '/dashboard/sme-dashboard';
                     } else if (response.data.user.user_type == "admin") {
                         window.location.href = '/dashboard/admin-dashboard';
                     } else {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
     Users,
@@ -12,26 +11,20 @@ import {
     CheckCircle,
     XCircle,
     AlertCircle,
-    Eye,
     RefreshCw,
-    Calendar,
     Package,
-    UserCheck,
-    Globe,
-    ArrowUpRight,
-    ArrowDownRight,
-    MoreHorizontal,
-    Mail,
-    Phone,
-    FileText,
     Shield,
-    Zap,
     Target,
     PieChart,
-    BarChart3
+    BarChart3,
+    ArrowUpRight,
+    MoreHorizontal
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Cell, BarChart, Bar } from 'recharts';
 
+// Import your actual API services
 import { getall_investors, getall_sme, getPayment, getSubscriptionplan, getAllRegistrationLogs } from '../Service/api';
+
 const fetchDashboardData = async () => {
     try {
         const [investors, smes, payments, subscriptions, registrationLogs] = await Promise.all([
@@ -178,7 +171,58 @@ const AdminDashboard = () => {
         }).length;
     }
 
-    // Recent activity data with safe array operations
+    // Prepare chart data
+    const userStatusData = [
+        { name: 'Approved Investors', value: metrics.approvedInvestors, color: '#10B981' },
+        { name: 'Pending Investors', value: metrics.pendingInvestors, color: '#F59E0B' },
+        { name: 'Approved SMEs', value: metrics.approvedSMEs, color: '#3B82F6' },
+        { name: 'Pending SMEs', value: metrics.pendingSMEs, color: '#EF4444' }
+    ];
+
+    const paymentStatusData = [
+        { name: 'Succeeded', value: metrics.succeededPayments, color: '#10B981' },
+        { name: 'Failed', value: metrics.failedPayments, color: '#EF4444' },
+        { name: 'Pending', value: metrics.pendingPayments, color: '#F59E0B' }
+    ];
+
+    const industryData = metrics.topIndustries.map(item => ({
+        name: item.industry,
+        value: item.count
+    }));
+
+    // Monthly registration trend (last 6 months)
+    const getMonthlyTrend = () => {
+        const months = [];
+        const now = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthName = month.toLocaleDateString('en-US', { month: 'short' });
+
+            const monthlyInvestors = safeInvestors.filter(inv => {
+                const invDate = new Date(inv.created_at);
+                return invDate.getMonth() === month.getMonth() && invDate.getFullYear() === month.getFullYear();
+            }).length;
+
+            const monthlySMEs = safeSMEs.filter(sme => {
+                const smeDate = new Date(sme.created_at);
+                return smeDate.getMonth() === month.getMonth() && smeDate.getFullYear() === month.getFullYear();
+            }).length;
+
+            months.push({
+                month: monthName,
+                investors: monthlyInvestors,
+                smes: monthlySMEs,
+                total: monthlyInvestors + monthlySMEs
+            });
+        }
+
+        return months;
+    };
+
+    const monthlyTrendData = getMonthlyTrend();
+
+    // Recent activity data
     const recentActivity = [
         ...safeInvestors.slice(0, 3).map(inv => ({
             type: 'investor',
@@ -252,7 +296,7 @@ const AdminDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className=" border-gray-200">
+            <div className="border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div>
@@ -275,7 +319,7 @@ const AdminDashboard = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Enhanced Key Metrics */}
+                {/* Key Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     {/* Total Users */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -366,211 +410,123 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Additional Metrics Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {/* KYC Verification */}
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    {/* Registration Trend Chart */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">KYC Verified</p>
-                                <p className="text-3xl font-bold text-gray-900">
-                                    {metrics.investorsWithKYC + metrics.smesWithKYC}
-                                </p>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    {metrics.totalUsers > 0 ?
-                                        Math.round(((metrics.investorsWithKYC + metrics.smesWithKYC) / metrics.totalUsers) * 100) : 0}% verified
-                                </p>
-                            </div>
-                            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                <Shield className="w-6 h-6 text-indigo-600" />
-                            </div>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+                                Registration Trend (Last 6 Months)
+                            </h3>
                         </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={monthlyTrendData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Line type="monotone" dataKey="investors" stroke="#3B82F6" strokeWidth={2} name="Investors" />
+                                <Line type="monotone" dataKey="smes" stroke="#10B981" strokeWidth={2} name="SMEs" />
+                                <Line type="monotone" dataKey="total" stroke="#8B5CF6" strokeWidth={2} name="Total" />
+                            </LineChart>
+                        </ResponsiveContainer>
                     </div>
 
-                    {/* Failed Payments */}
+                    {/* User Status Distribution */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Failed Payments</p>
-                                <p className="text-3xl font-bold text-gray-900">{metrics.failedPayments}</p>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    {metrics.totalPayments > 0 ?
-                                        Math.round((metrics.failedPayments / metrics.totalPayments) * 100) : 0}% failure rate
-                                </p>
-                            </div>
-                            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                                <XCircle className="w-6 h-6 text-red-600" />
-                            </div>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                <PieChart className="w-5 h-5 mr-2 text-purple-600" />
+                                User Status Distribution
+                            </h3>
                         </div>
-                    </div>
-
-                    {/* Subscription Plans */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Active Plans</p>
-                                <p className="text-3xl font-bold text-gray-900">{metrics.activeSubscriptions}</p>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    {metrics.inactiveSubscriptions} inactive
-                                </p>
-                            </div>
-                            <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center">
-                                <Package className="w-6 h-6 text-cyan-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Top Industry */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Top Industry</p>
-                                <p className="text-xl font-bold text-gray-900">
-                                    {metrics.topIndustries[0]?.industry || 'N/A'}
-                                </p>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    {metrics.topIndustries[0]?.count || 0} users
-                                </p>
-                            </div>
-                            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <PieChart className="w-6 h-6 text-orange-600" />
-                            </div>
-                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <RechartsPieChart>
+                                <PieChart
+                                    dataKey="value"
+                                    data={userStatusData}
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    label={({ name, value }) => `${name}: ${value}`}
+                                >
+                                    {userStatusData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </PieChart>
+                                <Tooltip />
+                            </RechartsPieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Charts and Activity Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    {/* User Status Overview */}
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-gray-900">User Status Overview</h3>
-                            <button className="text-gray-400 hover:text-gray-600">
-                                <MoreHorizontal className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                            {/* Investors */}
-                            <div>
-                                <h4 className="text-sm font-medium text-gray-700 mb-4 flex items-center">
-                                    <Users className="w-4 h-4 mr-2 text-blue-600" />
-                                    Investors ({metrics.totalInvestors})
-                                </h4>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Approved</span>
-                                        <div className="flex items-center">
-                                            <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                                                <div
-                                                    className="bg-green-500 h-2 rounded-full"
-                                                    style={{
-                                                        width: `${metrics.totalInvestors > 0 ? (metrics.approvedInvestors / metrics.totalInvestors) * 100 : 0}%`
-                                                    }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-900">{metrics.approvedInvestors}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Pending</span>
-                                        <div className="flex items-center">
-                                            <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                                                <div
-                                                    className="bg-yellow-500 h-2 rounded-full"
-                                                    style={{
-                                                        width: `${metrics.totalInvestors > 0 ? (metrics.pendingInvestors / metrics.totalInvestors) * 100 : 0}%`
-                                                    }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-900">{metrics.pendingInvestors}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* SMEs */}
-                            <div>
-                                <h4 className="text-sm font-medium text-gray-700 mb-4 flex items-center">
-                                    <Building className="w-4 h-4 mr-2 text-indigo-600" />
-                                    SMEs ({metrics.totalSMEs})
-                                </h4>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Approved</span>
-                                        <div className="flex items-center">
-                                            <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                                                <div
-                                                    className="bg-green-500 h-2 rounded-full"
-                                                    style={{
-                                                        width: `${metrics.totalSMEs > 0 ? (metrics.approvedSMEs / metrics.totalSMEs) * 100 : 0}%`
-                                                    }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-900">{metrics.approvedSMEs}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-600">Pending</span>
-                                        <div className="flex items-center">
-                                            <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                                                <div
-                                                    className="bg-yellow-500 h-2 rounded-full"
-                                                    style={{
-                                                        width: `${metrics.totalSMEs > 0 ? (metrics.pendingSMEs / metrics.totalSMEs) * 100 : 0}%`
-                                                    }}
-                                                ></div>
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-900">{metrics.pendingSMEs}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Payment Status */}
-                        <div className="mt-8 pt-6 border-t border-gray-200">
-                            <h4 className="text-sm font-medium text-gray-700 mb-4 flex items-center">
-                                <CreditCard className="w-4 h-4 mr-2 text-green-600" />
-                                Payment Status
-                            </h4>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-green-600">{metrics.succeededPayments}</p>
-                                    <p className="text-sm text-gray-600">Succeeded</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-yellow-600">{metrics.pendingPayments}</p>
-                                    <p className="text-sm text-gray-600">Pending</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-2xl font-bold text-gray-600">{metrics.totalPayments}</p>
-                                    <p className="text-sm text-gray-600">Total</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Enhanced Recent Activity */}
+                {/* Second Row Charts */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    {/* Payment Status Chart */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-                            <button className="text-violet-600 hover:text-violet-700 text-sm font-medium">
-                                View all
-                            </button>
+                            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                <CreditCard className="w-5 h-5 mr-2 text-green-600" />
+                                Payment Status Overview
+                            </h3>
                         </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={paymentStatusData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#3B82F6" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
 
-                        <div className="space-y-4">
-                            {recentActivity.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <Activity className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-500">No recent activity</p>
-                                </div>
-                            ) : (
-                                recentActivity.slice(0, 2).map((activity, index) => {  // 👈 limit to 4
+                    {/* Top Industries */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                                <Building className="w-5 h-5 mr-2 text-orange-600" />
+                                Top Industries
+                            </h3>
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={industryData} layout="horizontal">
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" />
+                                <YAxis dataKey="name" type="category" width={100} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#F59E0B" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Recent Activity */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                        <button className="text-violet-600 hover:text-violet-700 text-sm font-medium">
+                            View all
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {recentActivity.length === 0 ? (
+                            <div className="text-center py-8">
+                                <Activity className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-sm text-gray-500">No recent activity</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {recentActivity.slice(0, 6).map((activity, index) => {
                                     const Icon = activity.icon;
                                     return (
-                                        <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div
+                                            key={index}
+                                            className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                                        >
                                             <div className="flex-shrink-0">
                                                 <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
                                                     <Icon className="w-4 h-4 text-violet-600" />
@@ -584,7 +540,11 @@ const AdminDashboard = () => {
                                                     {activity.description}
                                                 </p>
                                                 <div className="flex items-center mt-1 space-x-2">
-                                                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(activity.status)}`}>
+                                                    <span
+                                                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                                                            activity.status
+                                                        )}`}
+                                                    >
                                                         {activity.status}
                                                     </span>
                                                     <span className="text-xs text-gray-500">
@@ -594,24 +554,9 @@ const AdminDashboard = () => {
                                             </div>
                                         </div>
                                     );
-                                })
-                            )}
-                        </div>
-
-
-                        {/* Quick Stats in Activity Panel */}
-                        <div className="mt-6 pt-4 border-t border-gray-200">
-                            <div className="grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <p className="text-lg font-bold text-violet-600">{metrics.todayRegistrations}</p>
-                                    <p className="text-xs text-gray-500">Today's Registrations</p>
-                                </div>
-                                <div>
-                                    <p className="text-lg font-bold text-green-600">{metrics.todayPayments}</p>
-                                    <p className="text-xs text-gray-500">Today's Payments</p>
-                                </div>
+                                })}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -619,15 +564,15 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <a href='/dashboard/viewusers' className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-violet-300 hover:bg-violet-50 transition-colors group">
+
+                        <a href="/dashboard/viewuinvesteruser" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-violet-300 hover:bg-violet-50 transition-colors group">
                             <div className="flex items-center">
                                 <Users className="w-5 h-5 text-violet-600 mr-3" />
-                                <span className="text-sm font-medium text-gray-900">View All Users</span>
+                                <span className="text-sm font-medium text-gray-900">View All SME Users</span>
                             </div>
                             <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-violet-600" />
                         </a>
-
-                        <a href='/dashboard/payments-management' className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-violet-300 hover:bg-violet-50 transition-colors group">
+                        <a href="/dashboard/payments-management" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-violet-300 hover:bg-violet-50 transition-colors group">
                             <div className="flex items-center">
                                 <CreditCard className="w-5 h-5 text-violet-600 mr-3" />
                                 <span className="text-sm font-medium text-gray-900">Manage Payments</span>
@@ -635,7 +580,7 @@ const AdminDashboard = () => {
                             <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-violet-600" />
                         </a>
 
-                        <a href='/dashboard/subscription-plan' className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-violet-300 hover:bg-violet-50 transition-colors group">
+                        <a href="/dashboard/subscription-plan" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-violet-300 hover:bg-violet-50 transition-colors group">
                             <div className="flex items-center">
                                 <Package className="w-5 h-5 text-violet-600 mr-3" />
                                 <span className="text-sm font-medium text-gray-900">Subscription Plans</span>

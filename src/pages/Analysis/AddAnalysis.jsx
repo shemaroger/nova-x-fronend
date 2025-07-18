@@ -19,13 +19,17 @@ import {
     User,
     Building,
     CreditCard,
-    DollarSign
+    DollarSign,
+    Shield,
+    TrendingUp,
+    Play,
+    ExternalLink,
+    AlertTriangle,
+    Ban
 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 // Import your API function
-import { uploadAnalyisisDocument } from '../Service/api'; // Update this path
+import { uploadAnalyisisDocument } from '../Service/api';
 
 const DocumentUploadPage = () => {
     const [formData, setFormData] = useState({
@@ -52,6 +56,8 @@ const DocumentUploadPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [showResults, setShowResults] = useState(false);
+    const [showCreditScoreModal, setShowCreditScoreModal] = useState(false);
+    const [creditScoreData, setCreditScoreData] = useState(null);
 
     // Enhanced file validation - ONLY PDF allowed
     const allowedTypes = ['application/pdf'];
@@ -62,12 +68,10 @@ const DocumentUploadPage = () => {
     const validateFile = (file) => {
         const errors = [];
 
-        // Check file type by MIME type
         if (!allowedTypes.includes(file.type)) {
             errors.push('Only PDF documents are allowed. Please select a PDF file.');
         }
 
-        // Additional check by file extension (backup validation)
         const fileName = file.name.toLowerCase();
         const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
 
@@ -75,12 +79,10 @@ const DocumentUploadPage = () => {
             errors.push('Invalid file format. Only PDF files (.pdf) are accepted.');
         }
 
-        // Check file size
         if (file.size > maxFileSize) {
             errors.push('File size must be less than 10MB. Please compress your PDF or select a smaller file.');
         }
 
-        // Check if file is empty
         if (file.size === 0) {
             errors.push('The selected file appears to be empty. Please select a valid PDF document.');
         }
@@ -90,55 +92,45 @@ const DocumentUploadPage = () => {
 
     // Handle file selection with enhanced validation
     const handleFileSelect = (documentType, file) => {
-        // Immediate validation
         const validationErrors = validateFile(file);
 
         if (validationErrors.length > 0) {
-            // Set error state
             setErrors(prev => ({
                 ...prev,
                 [documentType]: validationErrors[0]
             }));
 
-            // Show error notification
-            toast.error(validationErrors[0]);
+            showToast(validationErrors[0], 'error');
 
-            // Reset file input
             const fileInput = document.querySelector(`input[data-document-type="${documentType}"]`);
             if (fileInput) {
                 fileInput.value = '';
             }
-
             return;
         }
 
-        // Clear previous errors
         setErrors(prev => ({
             ...prev,
             [documentType]: null
         }));
 
-        // Update form data
         setFormData(prev => ({
             ...prev,
             [documentType]: file
         }));
 
-        // Clear preview (PDFs don't have previews)
         setPreviews(prev => ({
             ...prev,
             [documentType]: null
         }));
 
-        // Set success status
         setUploadStatus(prev => ({
             ...prev,
             [documentType]: 'success'
         }));
 
-        // Show success message
         const documentName = documentType === 'cashflow_document' ? 'Cashflow Document' : 'Tax Clearance Document';
-        toast.success(`${documentName} uploaded successfully! Ready for analysis.`);
+        showToast(`${documentName} uploaded successfully! Ready for analysis.`, 'success');
     };
 
     // Enhanced drag event handling with file type checking
@@ -147,14 +139,12 @@ const DocumentUploadPage = () => {
         e.stopPropagation();
 
         if (e.type === 'dragenter' || e.type === 'dragover') {
-            // Check if dragged files contain non-PDF files
             if (e.dataTransfer && e.dataTransfer.items) {
                 const hasInvalidFiles = Array.from(e.dataTransfer.items).some(item => {
                     return item.type !== 'application/pdf';
                 });
 
                 if (hasInvalidFiles) {
-                    // Show visual indication of invalid file type
                     setDragActive(prev => ({
                         ...prev,
                         [documentType]: false
@@ -192,24 +182,23 @@ const DocumentUploadPage = () => {
         const files = e.dataTransfer.files;
 
         if (!files || files.length === 0) {
-            toast.error('No files detected. Please try again.');
+            showToast('No files detected. Please try again.', 'error');
             return;
         }
 
         if (files.length > 1) {
-            toast.error('Please upload only one PDF document at a time.');
+            showToast('Please upload only one PDF document at a time.', 'error');
             return;
         }
 
         const file = files[0];
 
-        // Pre-validate file type before processing
         if (file.type !== 'application/pdf') {
             setErrors(prev => ({
                 ...prev,
                 [documentType]: 'Only PDF documents are allowed'
             }));
-            toast.error('Invalid file type! Only PDF documents (.pdf) are accepted. Please select a PDF file.');
+            showToast('Invalid file type! Only PDF documents (.pdf) are accepted. Please select a PDF file.', 'error');
             return;
         }
 
@@ -222,15 +211,12 @@ const DocumentUploadPage = () => {
 
         if (!file) return;
 
-        // Pre-validate before processing
         if (file.type !== 'application/pdf') {
             setErrors(prev => ({
                 ...prev,
                 [documentType]: 'Only PDF documents are allowed'
             }));
-            toast.error('Invalid file type! Please select a PDF document only.');
-
-            // Clear the input
+            showToast('Invalid file type! Please select a PDF document only.', 'error');
             e.target.value = '';
             return;
         }
@@ -260,13 +246,12 @@ const DocumentUploadPage = () => {
             [documentType]: null
         }));
 
-        // Clear file input
         const fileInput = document.querySelector(`input[data-document-type="${documentType}"]`);
         if (fileInput) {
             fileInput.value = '';
         }
 
-        toast.success('File removed successfully');
+        showToast('File removed successfully', 'success');
     };
 
     // Format file size
@@ -305,6 +290,71 @@ const DocumentUploadPage = () => {
         return 'Poor';
     };
 
+    // Credit Score specific functions
+    const getCreditScoreColor = (score) => {
+        if (score >= 8) return 'text-green-600';
+        if (score >= 6) return 'text-yellow-600';
+        if (score >= 4) return 'text-orange-600';
+        return 'text-red-600';
+    };
+
+    const getCreditScoreBgColor = (score) => {
+        if (score >= 8) return 'bg-green-100 border-green-200';
+        if (score >= 6) return 'bg-yellow-100 border-yellow-200';
+        if (score >= 4) return 'bg-orange-100 border-orange-200';
+        return 'bg-red-100 border-red-200';
+    };
+
+    // Toast notification function
+    const showToast = (message, type = 'info') => {
+        // Since we can't use react-toastify in this environment, we'll use console for now
+        // In your actual implementation, replace this with your toast library
+        console.log(`${type.toUpperCase()}: ${message}`);
+    };
+
+    // Check credit score and show notification
+    const checkCreditScore = (result) => {
+        const creditScore = result.rating || 0;
+
+        if (creditScore < 5) {
+            setCreditScoreData({
+                score: creditScore,
+                isBlocked: true,
+                message: 'Your credit score is below the minimum threshold for upgrades.',
+                recommendations: [
+                    {
+                        title: 'Improve Your Credit Score',
+                        description: 'Learn essential strategies to boost your credit rating',
+                        videoUrl: 'https://example.com/credit-improvement-video',
+                        type: 'video'
+                    },
+                    {
+                        title: 'Financial Planning Guide',
+                        description: 'Comprehensive guide to better financial management',
+                        videoUrl: 'https://example.com/financial-planning-guide',
+                        type: 'guide'
+                    }
+                ]
+            });
+            setShowCreditScoreModal(true);
+        } else if (creditScore < 6) {
+            setCreditScoreData({
+                score: creditScore,
+                isBlocked: false,
+                message: 'Your credit score could be improved for better opportunities.',
+                recommendations: [
+                    {
+                        title: 'Credit Enhancement Tips',
+                        description: 'Simple steps to improve your credit standing',
+                        videoUrl: 'https://example.com/credit-enhancement-tips',
+                        type: 'video'
+                    }
+                ]
+            });
+            setShowCreditScoreModal(true);
+        }
+    };
+
     // Handle form submission with real API
     const handleSubmit = async () => {
         // Validation
@@ -318,7 +368,7 @@ const DocumentUploadPage = () => {
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error('Please upload both required PDF documents');
+            showToast('Please upload both required PDF documents', 'error');
             return;
         }
 
@@ -335,46 +385,59 @@ const DocumentUploadPage = () => {
 
             setAnalysisResult(result);
             setShowResults(true);
-            toast.success('Documents uploaded and analyzed successfully!');
+
+            // Check credit score after successful analysis
+            checkCreditScore(result);
+
+            showToast('Documents uploaded and analyzed successfully!', 'success');
 
         } catch (error) {
             console.error('Upload error:', error);
 
-            // Handle different types of errors
             if (error.response) {
-                // Server responded with error status
                 const errorMessage = error.response.data?.error || 'Server error occurred';
                 const errorDetails = error.response.data?.details;
 
                 if (error.response.status === 400) {
-                    toast.error(`Validation Error: ${errorMessage}`);
+                    showToast(`Validation Error: ${errorMessage}`, 'error');
                 } else if (error.response.status === 503) {
-                    toast.error(`Service Unavailable: ${errorMessage}`);
+                    showToast(`Service Unavailable: ${errorMessage}`, 'error');
                 } else if (error.response.status === 500) {
-                    toast.error(`Analysis Error: ${errorMessage}`);
+                    showToast(`Analysis Error: ${errorMessage}`, 'error');
                 } else {
-                    toast.error(`Error: ${errorMessage}`);
+                    showToast(`Error: ${errorMessage}`, 'error');
                 }
 
                 if (errorDetails) {
                     console.error('Error details:', errorDetails);
                 }
             } else if (error.request) {
-                // Request was made but no response
-                toast.error('Network error: Unable to connect to server. Please check your internet connection.');
+                showToast('Network error: Unable to connect to server. Please check your internet connection.', 'error');
             } else {
-                // Something else happened
-                toast.error('An unexpected error occurred. Please try again.');
+                showToast('An unexpected error occurred. Please try again.', 'error');
             }
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    // Handle upgrade request
+    const handleUpgradeRequest = () => {
+        if (creditScoreData && creditScoreData.isBlocked) {
+            showToast('Upgrade blocked due to low credit score. Please improve your credit score first.', 'error');
+            return;
+        }
+
+        // Proceed with upgrade logic
+        showToast('Upgrade request submitted successfully!', 'success');
+    };
+
     // Handle new analysis
     const handleNewAnalysis = () => {
         setShowResults(false);
         setAnalysisResult(null);
+        setShowCreditScoreModal(false);
+        setCreditScoreData(null);
         setFormData({
             cashflow_document: null,
             tax_clearance_document: null
@@ -388,6 +451,133 @@ const DocumentUploadPage = () => {
             tax_clearance_document: 'idle'
         });
         setErrors({});
+    };
+
+    // Credit Score Modal Component
+    const CreditScoreModal = ({ isOpen, onClose, data }) => {
+        if (!isOpen || !data) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-90vh overflow-y-auto">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                                {data.isBlocked ? (
+                                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                        <Ban className="w-6 h-6 text-red-600" />
+                                    </div>
+                                ) : (
+                                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                        <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="text-xl font-semibold text-gray-900">
+                                        {data.isBlocked ? 'Upgrade Blocked' : 'Credit Score Alert'}
+                                    </h3>
+                                    <p className="text-sm text-gray-600">Credit Score: {data.score}/10</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className={`p-4 rounded-lg border-2 mb-6 ${getCreditScoreBgColor(data.score)}`}>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-700">Your Credit Score</span>
+                                <span className={`text-2xl font-bold ${getCreditScoreColor(data.score)}`}>
+                                    {data.score}/10
+                                </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                    className={`h-2 rounded-full transition-all duration-300 ${data.score >= 8 ? 'bg-green-500' : data.score >= 6 ? 'bg-yellow-500' : data.score >= 4 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                    style={{ width: `${(data.score / 10) * 100}%` }}
+                                ></div>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <p className="text-gray-700 mb-4">{data.message}</p>
+
+                            {data.isBlocked && (
+                                <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <AlertTriangle className="h-5 w-5 text-red-400" />
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-red-700">
+                                                <strong>Upgrade Blocked:</strong> Your credit score is below the minimum threshold of 5.0.
+                                                Please improve your credit score before requesting an upgrade.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mb-6">
+                            <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                                <TrendingUp className="w-5 h-5 mr-2" />
+                                Recommended Resources
+                            </h4>
+                            <div className="space-y-3">
+                                {data.recommendations.map((rec, index) => (
+                                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <h5 className="font-medium text-gray-900 mb-1">{rec.title}</h5>
+                                                <p className="text-sm text-gray-600 mb-3">{rec.description}</p>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                                        {rec.type === 'video' ? 'Video' : 'Guide'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => window.open(rec.videoUrl, '_blank')}
+                                                className="ml-4 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1 text-sm"
+                                            >
+                                                <Play className="w-3 h-3" />
+                                                <span>Watch</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                            >
+                                Close
+                            </button>
+                            <div className="flex space-x-3">
+                                <button
+                                    onClick={handleUpgradeRequest}
+                                    disabled={data.isBlocked}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${data.isBlocked
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-violet-600 text-white hover:bg-violet-700'
+                                        }`}
+                                >
+                                    {data.isBlocked ? 'Upgrade Blocked' : 'Request Upgrade'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     // Document upload component
@@ -519,7 +709,7 @@ const DocumentUploadPage = () => {
                         </button>
                     </div>
 
-                    {/* Overall Rating */}
+                    {/* Overall Rating with Credit Score Alert */}
                     <div className="bg-gradient-to-r from-violet-50 to-blue-50 rounded-lg p-6 mb-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -535,6 +725,18 @@ const DocumentUploadPage = () => {
                                     {result.rating}/10
                                 </div>
                             </div>
+                            {result.rating < 6 && (
+                                <button
+                                    onClick={() => setShowCreditScoreModal(true)}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${result.rating < 5
+                                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                        : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                        }`}
+                                >
+                                    <Shield className="w-4 h-4" />
+                                    <span>Credit Alert</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -682,6 +884,29 @@ const DocumentUploadPage = () => {
                             <RefreshCw className="w-4 h-4" />
                             <span>New Analysis</span>
                         </button>
+
+                        {/* Upgrade button with credit score check */}
+                        <button
+                            onClick={handleUpgradeRequest}
+                            disabled={result.rating < 5}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${result.rating < 5
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-violet-600 text-white hover:bg-violet-700'
+                                }`}
+                        >
+                            <CreditCard className="w-4 h-4" />
+                            <span>{result.rating < 5 ? 'Upgrade Blocked' : 'Request Upgrade'}</span>
+                        </button>
+
+                        {result.rating < 6 && (
+                            <button
+                                onClick={() => setShowCreditScoreModal(true)}
+                                className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors flex items-center space-x-2"
+                            >
+                                <TrendingUp className="w-4 h-4" />
+                                <span>Improve Score</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -791,6 +1016,13 @@ const DocumentUploadPage = () => {
                         )}
                     </>
                 )}
+
+                {/* Credit Score Modal */}
+                <CreditScoreModal
+                    isOpen={showCreditScoreModal}
+                    onClose={() => setShowCreditScoreModal(false)}
+                    data={creditScoreData}
+                />
             </div>
         </div>
     );

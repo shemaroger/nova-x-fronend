@@ -186,6 +186,23 @@ const Dashboard = ({ activePage }) => {
             description: 'View User Logs',
             color: 'from-yellow-500 to-orange-500',
             roles: ['admin'],
+        },
+
+        {
+            name: 'User Logs Report',
+            icon: <Bell className="w-5 h-5" />,
+            path: '/dashboard/user-registration-report',
+            description: 'View User Logs Report',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['admin'],
+        },
+        {
+            name: 'Payment Report',
+            icon: <Bell className="w-5 h-5" />,
+            path: '/dashboard/payments-report',
+            description: 'View Payment Report',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['admin'],
         }
     ];
     const getFilteredMenuItems = () => {

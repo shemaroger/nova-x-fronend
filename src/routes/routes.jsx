@@ -21,10 +21,13 @@ import Investment from '../pages/Invester/investiment';
 import ChatInterface from '../pages/Chat/ChatInterface';
 import SMEChatManagement from '../pages/Chat/SMEChatManagement';
 import AnalysisListing from '../pages/Analysis/AnalysisListing';
+import UserRegistrationReportPage from '../pages/Report/UserRegistrationReportPage';
+import PaymentsReportPage from '../pages/Report/PaymentsReportPage';
+import Landingpage from '../pages/Landingpage';
 
 export const routes = [
     { path: '/signup', component: Signup, name: 'Signup' },
-    { path: '/', component: Login, name: 'Login' },
+    { path: '/', component: Landingpage, name: 'landignpage' },
     { path: '/login', component: Login, name: 'Login' },
     { path: '/addkyc', component: AddKyc, name: 'AddKyc' },
     {
@@ -53,6 +56,8 @@ export const routes = [
             { path: 'chat', component: ChatInterface, name: 'chat' },
             { path: 'sme-chat-management', component: SMEChatManagement, name: 'sme-chat-management' },
             { path: 'analysis-listing', component: AnalysisListing, name: 'analysis-listing' },
+            { path: 'user-registration-report', component: UserRegistrationReportPage, name: 'user-registration-report' },
+            { path: 'payments-report', component: PaymentsReportPage, name: 'payments-report' },
 
 
         ]
