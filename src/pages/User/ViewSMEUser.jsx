@@ -26,11 +26,12 @@ import {
     FileText,
     Settings,
     UserCheck,
-    MapPin
+    MapPin,
+    X
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getall_sme, approveSME } from '../Service/api';
+import { getall_sme, approveSME, rejectSME } from '../Service/api';
 import { useNavigate } from 'react-router-dom'
 
 const AllUsersAccountsPage = () => {
@@ -45,6 +46,13 @@ const AllUsersAccountsPage = () => {
     const [usersPerPage] = useState(5);
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [openDropdown, setOpenDropdown] = useState(null);
+
+    // Rejection Modal State
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [selectedUserForRejection, setSelectedUserForRejection] = useState(null);
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [rejectionLoading, setRejectionLoading] = useState(false);
+
     const navigate = useNavigate();
 
     const fetchUsers = async () => {
@@ -176,7 +184,6 @@ const AllUsersAccountsPage = () => {
         });
     };
 
-    // Handle sorting
     const handleSort = (field) => {
         if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -199,9 +206,6 @@ const AllUsersAccountsPage = () => {
         navigate(`/dashboard/kycdocuments/${user.user_id}`);
     };
 
-
-
-
     const handleApproveUser = async (user) => {
         try {
             await approveSME(user.id);
@@ -211,6 +215,48 @@ const AllUsersAccountsPage = () => {
             console.log(err)
             toast.error(`Failed to approve ${user.business_name}`);
         }
+    };
+
+    // Handle rejection - open modal
+    const handleRejectUser = (user) => {
+        setSelectedUserForRejection(user);
+        setShowRejectModal(true);
+        setRejectionReason('');
+    };
+
+    // Handle rejection confirmation
+    const handleConfirmRejection = async () => {
+        if (!rejectionReason.trim()) {
+            toast.error('Please provide a reason for rejection');
+            return;
+        }
+
+        setRejectionLoading(true);
+        try {
+            // Call the reject API with the reason
+            await rejectSME(selectedUserForRejection.id, rejectionReason);
+            toast.success(`${selectedUserForRejection.business_name} has been rejected`);
+
+            // Close modal and reset state
+            setShowRejectModal(false);
+            setSelectedUserForRejection(null);
+            setRejectionReason('');
+
+            // Refresh users list
+            fetchUsers();
+        } catch (err) {
+            console.error('Error rejecting user:', err);
+            toast.error(`Failed to reject ${selectedUserForRejection.business_name}`);
+        } finally {
+            setRejectionLoading(false);
+        }
+    };
+
+    // Close rejection modal
+    const handleCloseRejectionModal = () => {
+        setShowRejectModal(false);
+        setSelectedUserForRejection(null);
+        setRejectionReason('');
     };
 
     const handleRefresh = () => {
@@ -271,6 +317,84 @@ const AllUsersAccountsPage = () => {
             </div>
         </th>
     );
+
+    // Rejection Modal Component
+    const RejectionModal = () => {
+        if (!showRejectModal) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Reject Application
+                        </h3>
+                        <button
+                            onClick={handleCloseRejectionModal}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="p-6">
+                        <div className="mb-4">
+                            <p className="text-sm text-gray-600 mb-2">
+                                You are about to reject the application for:
+                            </p>
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                                <p className="font-medium text-gray-900">
+                                    {selectedUserForRejection?.business_name}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    {selectedUserForRejection?.representative_name}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Reason for Rejection <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                placeholder="Please provide a detailed reason for rejecting this application..."
+                                rows={4}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                                disabled={rejectionLoading}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                This reason will be sent to the applicant.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                        <button
+                            onClick={handleCloseRejectionModal}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            disabled={rejectionLoading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmRejection}
+                            disabled={!rejectionReason.trim() || rejectionLoading}
+                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center space-x-2"
+                        >
+                            {rejectionLoading && (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                            )}
+                            <span>
+                                {rejectionLoading ? 'Rejecting...' : 'Reject Application'}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     // Loading state
     if (loading) {
@@ -517,7 +641,6 @@ const AllUsersAccountsPage = () => {
                                                                 View KYC Doc
                                                             </button>
 
-
                                                             {user.application_status === 'pending' && (
                                                                 <>
                                                                     <hr className="my-1" />
@@ -531,7 +654,7 @@ const AllUsersAccountsPage = () => {
                                                                         <CheckCircle className="w-4 h-4 mr-1 text-green-600" />
                                                                         Approve Application
                                                                     </button>
-                                                                    {/* <button
+                                                                    <button
                                                                         onClick={() => {
                                                                             handleRejectUser(user);
                                                                             setOpenDropdown(null);
@@ -540,7 +663,7 @@ const AllUsersAccountsPage = () => {
                                                                     >
                                                                         <XCircle className="w-4 h-4 mr-3 text-red-600" />
                                                                         Reject Application
-                                                                    </button> */}
+                                                                    </button>
                                                                 </>
                                                             )}
                                                         </div>
@@ -632,6 +755,9 @@ const AllUsersAccountsPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Rejection Modal */}
+            <RejectionModal />
         </div>
     );
 };

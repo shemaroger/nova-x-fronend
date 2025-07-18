@@ -284,21 +284,6 @@ export const approveSME = async (SMEId) => {
 };
 
 
-export const rejectInvestor = async (investorId, rejectionReason) => {
-    const formData = new FormData();
-    formData.append('rejection_reason', rejectionReason);
-
-    try {
-        const response = await api.put(
-            `/investor/${investorId}/reject_investor/`,
-            formData
-        );
-        return response.data;
-    } catch (error) {
-        throw handleError(error);
-    }
-};
-
 export const uploadKYCDocument = async (documentType, file, additionalData = {}) => {
     try {
         const formData = new FormData();
@@ -364,6 +349,29 @@ export const rejectKycDocument = async (documentId, rejectionReason) => {
 
     try {
         const response = await api.put(`/kyc/documents/${documentId}/reject/`, formData);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+export const rejectSME = async (userId, rejectionReason) => {
+    try {
+        const response = await api.put(`/sme/${userId}/reject_SME/`, {
+            rejection_reason: rejectionReason
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const rejectInvestor = async (investorId, rejectionReason) => {
+    try {
+        const response = await api.put(`/investor/${investorId}/reject_investor/`, {
+            rejection_reason: rejectionReason
+        });
         return response.data;
     } catch (error) {
         throw handleError(error);

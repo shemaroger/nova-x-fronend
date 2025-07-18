@@ -210,13 +210,13 @@ const AllUsersAccountsPage = () => {
         }
     };
 
-    // Open rejection modal
-    // const handleRejectUser = (user) => {
-    //     setSelectedUserForRejection(user);
-    //     setRejectionReason('');
-    //     setShowRejectModal(true);
-    //     setOpenDropdown(null);
-    // };
+    // Open rejection modal - UNCOMMENTED AND UPDATED
+    const handleRejectUser = (user) => {
+        setSelectedUserForRejection(user);
+        setRejectionReason('');
+        setShowRejectModal(true);
+        setOpenDropdown(null);
+    };
 
     // Close rejection modal
     const closeRejectModal = () => {
@@ -235,9 +235,7 @@ const AllUsersAccountsPage = () => {
 
         setIsSubmittingRejection(true);
         try {
-
             await rejectInvestor(selectedUserForRejection.id, rejectionReason);
-
             toast.success(`${selectedUserForRejection.full_name} has been rejected`);
             fetchUsers();
             closeRejectModal();
@@ -539,10 +537,7 @@ const AllUsersAccountsPage = () => {
                                                                 View KYC Doc
                                                             </button>
 
-
-
                                                             {user.application_status === 'pending' && (
-
                                                                 <>
                                                                     <hr className="my-2 border-gray-300" />
                                                                     <button
@@ -555,13 +550,13 @@ const AllUsersAccountsPage = () => {
                                                                         <CheckCircle className="w-4 h-4 mr-1 text-green-600" />
                                                                         Approve Application
                                                                     </button>
-                                                                    {/* <button
+                                                                    <button
                                                                         onClick={() => handleRejectUser(user)}
                                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 w-full text-left"
                                                                     >
                                                                         <XCircle className="w-4 h-4 mr-3 text-red-600" />
                                                                         Reject Application
-                                                                    </button> */}
+                                                                    </button>
                                                                 </>
                                                             )}
                                                         </div>
