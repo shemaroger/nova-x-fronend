@@ -400,6 +400,27 @@ export const getSMEUserDetail = async (user_id) => {
     }
 };
 
+export const approveAsBroker = async (user_id) => {
+    try {
+        const response = await api.put(`/auth/${user_id}/brocker_user/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+export const Approval_brocker_user = async (user_id) => {
+    try {
+        const response = await api.put(`/auth/${user_id}/Approval_brocker_user/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+
 
 export const getSMEUser_info = async (user_id) => {
     try {

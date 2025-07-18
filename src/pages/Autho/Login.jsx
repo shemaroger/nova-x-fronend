@@ -258,29 +258,40 @@ const LoginApp = () => {
             const response = await login(loginData);
 
             if (response.success) {
-                storeAuthData(response);
-                if (response.data.user.profile_data.application_status == "rejected" || response.data.user.profile_data.application_status == "pending" || response.data.user.profile_data.kyc_status == "") {
-                    toast.error("Your application is still pending. Please wait for the approval from the admin.")
-                    console.log("Your application is still pending. Please wait for the approval from the admin.")
-                    localStorage.setItem('user_id', response.data.user.id);
-                    window.location.href = '/addkyc';
-                } else {
-                    toast.success("Login successful. Welcome back!")
-                    localStorage.setItem('user_id', response.data.user.id);
-                    localStorage.setItem('email', response.data.user.email);
-                    localStorage.setItem('profile_data', JSON.stringify(response.data.user.profile_data));
-                    localStorage.setItem('name', response.data.user.name);
-                    localStorage.setItem('user', response.data.user.user_type);
-                    if (response.data.user.user_type == "investor") {
-                        window.location.href = '/dashboard/investor-dashboard';
-                    } else if (response.data.user.user_type == "sme") {
-                        window.location.href = '/dashboard/sme-dashboard';
-                    } else if (response.data.user.user_type == "admin") {
-                        window.location.href = '/dashboard/admin-dashboard';
+                console.log("is_active =", response.data.user.is_active);
+                if (response.data.user.is_broker == true) {
+
+                    storeAuthData(response);
+                    if (response.data.user.profile_data.application_status == "rejected" || response.data.user.profile_data.application_status == "pending" || response.data.user.profile_data.kyc_status == "") {
+                        toast.error("Your application is still pending. Please wait for the approval from the admin.")
+                        console.log("Your application is still pending. Please wait for the approval from the admin.")
+                        localStorage.setItem('user_id', response.data.user.id);
+                        window.location.href = '/addkyc';
                     } else {
-                        toast.error("Invalid user type.")
-                        window.location.href = '/login';
+                        toast.success("Login successful. Welcome back!")
+                        localStorage.setItem('user_id', response.data.user.id);
+                        localStorage.setItem('email', response.data.user.email);
+                        localStorage.setItem('profile_data', JSON.stringify(response.data.user.profile_data));
+                        localStorage.setItem('name', response.data.user.name);
+                        localStorage.setItem('user', response.data.user.user_type);
+                        if (response.data.user.user_type == "investor") {
+                            window.location.href = '/dashboard/investor-dashboard';
+                        } else if (response.data.user.user_type == "sme") {
+                            window.location.href = '/dashboard/sme-dashboard';
+                        } else if (response.data.user.user_type == "admin") {
+                            window.location.href = '/dashboard/admin-dashboard';
+                        } else {
+                            toast.error("Invalid user type.")
+                            window.location.href = '/login';
+                        }
                     }
+
+                } else {
+                    const adminPhone = "+250 788 123 456";
+                    const errorMessage = `Your account is not active. Please contact the admin at ${adminPhone}.`;
+
+                    toast.error(errorMessage);
+                    console.log(errorMessage);
                 }
 
             } else {

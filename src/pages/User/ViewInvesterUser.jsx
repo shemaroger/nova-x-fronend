@@ -25,11 +25,11 @@ import {
     ChevronDown,
     FileText,
     Settings,
-    X
+    X, UserCheck, UserX
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getall_investors, approveInvestor, rejectInvestor } from '../Service/api';
+import { getall_investors, approveInvestor, rejectInvestor, approveAsBroker, Approval_brocker_user } from '../Service/api';
 import { useNavigate } from 'react-router-dom';
 
 const AllUsersAccountsPage = () => {
@@ -172,6 +172,28 @@ const AllUsersAccountsPage = () => {
             </div>
         );
     };
+
+    const handleApproveAsBroker = async (userId) => {
+        try {
+            const response = await Approval_brocker_user(userId);
+            toast.success(response.message || 'User approved as broker!');
+            fetchUsers();
+        } catch (error) {
+            toast.error(error.message || 'Failed to approve broker');
+        }
+    };
+
+
+    const handleUnbroker = async (userId) => {
+        try {
+            const response = await approveAsBroker(userId);
+            toast.success(response.message || 'User approved as broker!');
+            fetchUsers();
+        } catch (error) {
+            toast.error(error.message || 'Failed to approve broker');
+        }
+    };
+
 
     // Format date
     const formatDate = (dateString) => {
@@ -433,7 +455,7 @@ const AllUsersAccountsPage = () => {
                                     </th>
                                     <SortableHeader field="email">Contact</SortableHeader>
                                     <SortableHeader field="industry">Industry</SortableHeader>
-                                    <SortableHeader field="finance_range">Investment Range</SortableHeader>
+                                    <SortableHeader field="finance_range">Is brocked</SortableHeader>
                                     <SortableHeader field="application_status">Status</SortableHeader>
                                     <SortableHeader field="created_at">Date Joined</SortableHeader>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -498,10 +520,24 @@ const AllUsersAccountsPage = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center text-sm text-gray-900">
-                                                <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
-                                                {user.finance_range || 'Not specified'}
-                                            </div>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center text-sm">
+                                                    {user.user_is_broker === 1 ? (
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                            No
+                                                        </span>
+                                                    ) : user.user_is_broker === 0 ? (
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                            Yes
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                                            Not specified
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <StatusBadge status={user.application_status} />
@@ -537,6 +573,23 @@ const AllUsersAccountsPage = () => {
                                                                 View KYC Doc
                                                             </button>
 
+                                                            {(user.application_status === 'rejected') && (
+                                                                <>
+                                                                    <hr className="my-1" />
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            handleApproveUser(user);
+                                                                            setOpenDropdown(null);
+                                                                        }}
+                                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 w-full text-left"
+                                                                    >
+                                                                        <CheckCircle className="w-4 h-4 mr-1 text-green-600" />
+                                                                        Approve Application
+                                                                    </button>
+                                                                </>
+
+                                                            )}
+
                                                             {user.application_status === 'pending' && (
                                                                 <>
                                                                     <hr className="my-2 border-gray-300" />
@@ -559,6 +612,23 @@ const AllUsersAccountsPage = () => {
                                                                     </button>
                                                                 </>
                                                             )}
+                                                            <button
+                                                                onClick={() => handleApproveAsBroker(user.user_id)}
+                                                                className="flex items-center px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-md w-full transition-colors duration-200"
+                                                            >
+                                                                <UserCheck className="w-4 h-4 mr-2" />
+                                                                Approve as Broker
+                                                            </button>
+
+                                                            {/* Unbroker Account Button */}
+                                                            <button
+                                                                onClick={() => handleUnbroker(user.user_id)}
+                                                                className="flex items-center px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-md w-full transition-colors duration-200 mt-2"
+                                                            >
+                                                                <X className="w-4 h-4 mr-2" />
+                                                                Revoke Broker Access
+                                                            </button>
+
                                                         </div>
                                                     </div>
                                                 )}
