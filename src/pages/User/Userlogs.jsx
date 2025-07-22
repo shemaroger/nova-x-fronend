@@ -38,7 +38,7 @@ const UserRegistrationLogsPage = () => {
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(4);
+    const [itemsPerPage, setItemsPerPage] = useState(6);
 
     // Fetch registration logs
     const fetchRegistrationLogs = async () => {
@@ -310,10 +310,6 @@ const UserRegistrationLogsPage = () => {
                             >
                                 <RefreshCw className="w-4 h-4" />
                                 <span>Refresh</span>
-                            </button>
-                            <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2">
-                                <Download className="w-4 h-4" />
-                                <span>Export</span>
                             </button>
                         </div>
                     </div>

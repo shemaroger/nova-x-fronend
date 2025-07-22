@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom'
-import { Users, Folder, BarChart2, Menu, X, Bell, Search, Settings, LogOut, User, ChevronDown, Home, Film, ChevronRight, Zap, ChevronUp } from 'lucide-react';
+import { Users, Folder, BarChart2, Menu, X, Bell, Search, Settings, LogOut, User, ChevronDown, Home, Film, ChevronRight, Zap, ChevronUp, FileText, CreditCard, MessageCircle, HelpCircle, TrendingUp, PieChart, Shield, Activity, Archive, DollarSign, Briefcase, Target } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { logout } from '../Service/api';
@@ -13,6 +13,12 @@ const Dashboard = ({ activePage }) => {
     const navigate = useNavigate();
     const [hoveredItem, setHoveredItem] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Auto-scroll refs and state
+    const sidebarRef = useRef(null);
+    const activeItemRef = useRef(null);
+    const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
     const getUserData = () => {
         try {
             const storedUser = localStorage.getItem('user');
@@ -52,7 +58,7 @@ const Dashboard = ({ activePage }) => {
         },
         {
             name: 'Dashboard',
-            icon: <Film className="w-5 h-5" />,
+            icon: <TrendingUp className="w-5 h-5" />,
             path: '/dashboard/investor-dashboard',
             description: 'Overview Dashboard.',
             badge: null,
@@ -61,7 +67,7 @@ const Dashboard = ({ activePage }) => {
         },
         {
             name: 'Dashboard',
-            icon: <Film className="w-5 h-5" />,
+            icon: <Briefcase className="w-5 h-5" />,
             path: '/dashboard/sme-dashboard',
             description: 'Overview Dashboard.',
             badge: null,
@@ -92,7 +98,7 @@ const Dashboard = ({ activePage }) => {
         },
         {
             name: 'Document Uploaded',
-            icon: <Folder className="w-5 h-5" />,
+            icon: <FileText className="w-5 h-5" />,
             path: '/dashboard/addanalysis',
             description: 'Document Predict',
             badge: null,
@@ -100,8 +106,8 @@ const Dashboard = ({ activePage }) => {
             roles: ['sme'],
         },
         {
-            name: 'View Analyisis ',
-            icon: <Folder className="w-5 h-5" />,
+            name: 'View Analysis',
+            icon: <Activity className="w-5 h-5" />,
             path: '/dashboard/analysis-listing',
             description: 'Document Predict',
             badge: null,
@@ -110,25 +116,25 @@ const Dashboard = ({ activePage }) => {
         },
         {
             name: 'Manage Subscriptions',
-            icon: <BarChart2 className="w-5 h-5" />,
+            icon: <CreditCard className="w-5 h-5" />,
             path: '/dashboard/subscription-plan',
-            description: 'Create & monitoring ',
+            description: 'Create & monitoring',
             badge: null,
             color: 'from-orange-500 to-red-500',
             roles: ['admin'],
         },
         {
             name: 'Manage Payments',
-            icon: <BarChart2 className="w-5 h-5" />,
+            icon: <DollarSign className="w-5 h-5" />,
             path: '/dashboard/payments-management',
-            description: 'Create & monitoring ',
+            description: 'Create & monitoring',
             badge: null,
             color: 'from-orange-500 to-red-500',
             roles: ['admin'],
         },
         {
             name: 'Subscriptions',
-            icon: <BarChart2 className="w-5 h-5" />,
+            icon: <Shield className="w-5 h-5" />,
             path: '/dashboard/subscription',
             description: 'Manage your active plans.',
             badge: null,
@@ -137,7 +143,7 @@ const Dashboard = ({ activePage }) => {
         },
         {
             name: 'Notification',
-            icon: <BarChart2 className="w-5 h-5" />,
+            icon: <Bell className="w-5 h-5" />,
             path: '/dashboard/notifications-management',
             description: 'Manage your Notifications.',
             badge: null,
@@ -146,19 +152,17 @@ const Dashboard = ({ activePage }) => {
         },
         {
             name: 'My Investment',
-            icon: <Folder className="w-5 h-5" />,
+            icon: <Target className="w-5 h-5" />,
             path: '/dashboard/investment',
             description: 'Browse Opportunities',
-
             color: 'from-yellow-500 to-orange-500',
             roles: ['investor'],
         },
         {
             name: 'Investment Opportunities',
-            icon: <Folder className="w-5 h-5" />,
+            icon: <TrendingUp className="w-5 h-5" />,
             path: '/dashboard/get-sme-users',
             description: 'Browse Opportunities',
-
             color: 'from-yellow-500 to-orange-500',
             roles: ['investor'],
         },
@@ -166,7 +170,7 @@ const Dashboard = ({ activePage }) => {
             name: 'Investor Chats',
             path: '/dashboard/sme-chat-management',
             description: 'Investor Chats',
-            icon: <Bell className="w-5 h-5" />,
+            icon: <MessageCircle className="w-5 h-5" />,
             color: 'from-yellow-500 to-orange-500',
             roles: ['sme'],
         },
@@ -174,23 +178,21 @@ const Dashboard = ({ activePage }) => {
             name: 'SME Chats',
             path: '/dashboard/chat',
             description: 'Sme Chats',
-            icon: <Bell className="w-5 h-5" />,
+            icon: <MessageCircle className="w-5 h-5" />,
             color: 'from-yellow-500 to-orange-500',
             roles: ['investor'],
         },
-
         {
             name: 'User Logs',
-            icon: <Bell className="w-5 h-5" />,
+            icon: <Archive className="w-5 h-5" />,
             path: '/dashboard/user-logs',
             description: 'View User Logs',
             color: 'from-yellow-500 to-orange-500',
             roles: ['admin'],
         },
-
         {
             name: 'User Logs Report',
-            icon: <Bell className="w-5 h-5" />,
+            icon: <PieChart className="w-5 h-5" />,
             path: '/dashboard/user-registration-report',
             description: 'View User Logs Report',
             color: 'from-yellow-500 to-orange-500',
@@ -198,13 +200,54 @@ const Dashboard = ({ activePage }) => {
         },
         {
             name: 'Payment Report',
-            icon: <Bell className="w-5 h-5" />,
+            icon: <BarChart2 className="w-5 h-5" />,
             path: '/dashboard/payments-report',
             description: 'View Payment Report',
             color: 'from-yellow-500 to-orange-500',
             roles: ['admin'],
+        },
+        {
+            name: 'Subscription Report',
+            icon: <BarChart2 className="w-5 h-5" />,
+            path: '/dashboard/subscription-report',
+            description: 'View Subscription Report',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['admin'],
+        },
+        {
+            name: 'Help Support',
+            icon: <HelpCircle className="w-5 h-5" />,
+            path: '/dashboard/help-and-support',
+            description: 'Help Support',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['admin'],
+        },
+        {
+            name: 'Help Support',
+            icon: <HelpCircle className="w-5 h-5" />,
+            path: '/dashboard/user-help',
+            description: 'Help Support',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['investor', 'sme'],
+        },
+        {
+            name: 'Help Support Message',
+            icon: <MessageCircle className="w-5 h-5" />,
+            path: '/dashboard/support-chat',
+            description: 'Help Support Message',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['investor', 'sme'],
+        },
+        {
+            name: 'Help Support Message',
+            icon: <MessageCircle className="w-5 h-5" />,
+            path: '/dashboard/admin-support-chat',
+            description: 'Help Support Message',
+            color: 'from-yellow-500 to-orange-500',
+            roles: ['admin'],
         }
     ];
+
     const getFilteredMenuItems = () => {
         return allMenuItems.filter(item => {
             if (!item.roles.includes(userdata.user_type)) {
@@ -222,6 +265,61 @@ const Dashboard = ({ activePage }) => {
     };
 
     const menuItems = getFilteredMenuItems();
+
+    // Auto-scroll function
+    const scrollToActiveItem = () => {
+        if (!shouldAutoScroll || !activeItemRef.current || !sidebarRef.current) return;
+
+        const sidebarContainer = sidebarRef.current;
+        const activeItem = activeItemRef.current;
+
+        const sidebarRect = sidebarContainer.getBoundingClientRect();
+        const activeItemRect = activeItem.getBoundingClientRect();
+
+        const sidebarTop = sidebarContainer.scrollTop;
+        const sidebarHeight = sidebarRect.height;
+        const itemTop = activeItem.offsetTop;
+        const itemHeight = activeItemRect.height;
+
+        // Calculate if item is visible in current viewport
+        const itemVisibleTop = itemTop - sidebarTop;
+        const itemVisibleBottom = itemVisibleTop + itemHeight;
+
+        // Add padding for better visual spacing
+        const padding = 20;
+
+        // Check if item is not fully visible
+        if (itemVisibleTop < padding || itemVisibleBottom > sidebarHeight - padding) {
+            // Calculate scroll position to center the item
+            const scrollTo = itemTop - (sidebarHeight / 2) + (itemHeight / 2);
+
+            sidebarContainer.scrollTo({
+                top: Math.max(0, scrollTo),
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    // Auto-scroll when active menu item changes
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            scrollToActiveItem();
+        }, 100); // Small delay to ensure DOM is updated
+
+        return () => clearTimeout(timer);
+    }, [activeMenuItem, expandedMenus]);
+
+    // Detect user scroll to pause auto-scroll temporarily
+    const handleSidebarScroll = () => {
+        setShouldAutoScroll(false);
+
+        // Re-enable auto-scroll after user stops scrolling
+        const timer = setTimeout(() => {
+            setShouldAutoScroll(true);
+        }, 2000);
+
+        return () => clearTimeout(timer);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -291,7 +389,17 @@ const Dashboard = ({ activePage }) => {
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                <nav className="mt-6 px-4 space-y-1 h-[calc(100vh-140px)] overflow-y-auto">
+
+                {/* Scrollable Navigation Container */}
+                <nav
+                    ref={sidebarRef}
+                    onScroll={handleSidebarScroll}
+                    className="mt-6 px-4 space-y-1 h-[70vh] overflow-y-auto scroll-smooth"
+                    style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(59, 130, 246, 0.5) transparent'
+                    }}
+                >
                     <div className="mb-6">
                         <h3 className="text-xs font-semibold text-blue-200 uppercase tracking-wider px-3 mb-3">
                             Main Menu ({userdata.role})
@@ -307,6 +415,7 @@ const Dashboard = ({ activePage }) => {
                                     onMouseLeave={() => setHoveredItem(null)}
                                 >
                                     <button
+                                        ref={(activeMenuItem === item.path || (item.subItems && item.subItems.some(sub => sub.path === activeMenuItem))) ? activeItemRef : null}
                                         onClick={() => handleMenuClick(item.path, item.hasSubItems)}
                                         className={`
                                             w-full flex items-center justify-between p-3 rounded-xl text-left 
@@ -409,6 +518,7 @@ const Dashboard = ({ activePage }) => {
                                         {item.subItems.map((subItem, subIndex) => (
                                             <button
                                                 key={`${subItem.path}-${subIndex}`}
+                                                ref={activeMenuItem === subItem.path ? activeItemRef : null}
                                                 onClick={() => handleSubMenuClick(subItem.path)}
                                                 className={`
                                                     w-full flex items-center justify-between p-2.5 rounded-lg text-left 
@@ -448,6 +558,9 @@ const Dashboard = ({ activePage }) => {
                             </div>
                         ))}
                     </div>
+
+                    {/* Scroll Indicator - Optional visual enhancement */}
+                    <div className="sticky bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-blue-900 to-transparent pointer-events-none"></div>
                 </nav>
 
                 {/* User Profile */}
@@ -609,6 +722,24 @@ const Dashboard = ({ activePage }) => {
                     onClick={() => setSidebarOpen(false)}
                 ></div>
             )}
+
+            {/* Custom Scrollbar Styles */}
+            <style jsx>{`
+                nav::-webkit-scrollbar {
+                    width: 6px;
+                }
+                nav::-webkit-scrollbar-track {
+                    background: rgba(59, 130, 246, 0.1);
+                    border-radius: 3px;
+                }
+                nav::-webkit-scrollbar-thumb {
+                    background: rgba(59, 130, 246, 0.5);
+                    border-radius: 3px;
+                }
+                nav::-webkit-scrollbar-thumb:hover {
+                    background: rgba(59, 130, 246, 0.7);
+                }
+            `}</style>
         </div>
     );
 };

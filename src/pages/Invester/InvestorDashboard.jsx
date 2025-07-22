@@ -37,6 +37,25 @@ import {
     CreditCard,
     Package
 } from 'lucide-react';
+import {
+    LineChart,
+    Line,
+    BarChart,
+    Bar,
+    PieChart as RechartsPieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    RadialBarChart,
+    RadialBar
+} from 'recharts';
 
 // Import your actual API functions
 import { getInvestorUserDetail, getall_sme_active } from '../Service/api';
@@ -96,7 +115,167 @@ const InvestorDashboard = () => {
         };
     };
 
+    // Generate chart data from real API data
+    const generateChartData = () => {
+        // Industry Distribution from SME companies
+        const industryDistribution = {};
+        smeCompanies.forEach(company => {
+            if (company.industry) {
+                industryDistribution[company.industry] = (industryDistribution[company.industry] || 0) + 1;
+            }
+        });
+
+        const industryChartData = Object.entries(industryDistribution).map(([industry, count]) => ({
+            name: industry,
+            value: count,
+            percentage: ((count / smeCompanies.length) * 100).toFixed(1)
+        }));
+
+        // Company Status Distribution
+        const statusDistribution = {};
+        smeCompanies.forEach(company => {
+            const status = company.status || 'unknown';
+            statusDistribution[status] = (statusDistribution[status] || 0) + 1;
+        });
+
+        const statusChartData = Object.entries(statusDistribution).map(([status, count]) => ({
+            name: status.charAt(0).toUpperCase() + status.slice(1),
+            value: count,
+            percentage: ((count / smeCompanies.length) * 100).toFixed(1)
+        }));
+
+        // Company Timeline (based on commencement dates)
+        const currentYear = new Date().getFullYear();
+        const timelineData = {};
+
+        smeCompanies.forEach(company => {
+            if (company.commencement_date) {
+                const year = new Date(company.commencement_date).getFullYear();
+                if (year >= currentYear - 10) { // Last 10 years
+                    timelineData[year] = (timelineData[year] || 0) + 1;
+                }
+            }
+        });
+
+        const companyTimelineData = Object.entries(timelineData)
+            .sort(([a], [b]) => a - b)
+            .map(([year, count]) => ({
+                year: year.toString(),
+                companies: count,
+                cumulative: Object.entries(timelineData)
+                    .filter(([y]) => y <= year)
+                    .reduce((sum, [, c]) => sum + c, 0)
+            }));
+
+        // Investment Opportunity Analysis (based on your investment range vs company needs)
+        const investmentRangeValue = {
+            'under_100k': 50000,
+            '100k_500k': 300000,
+            '500k_1m': 750000,
+            '1m_5m': 3000000,
+            '5m_10m': 7500000,
+            'over_10m': 15000000
+        };
+
+        const userInvestmentCapacity = investmentRangeValue[profileData?.finance_range] || 0;
+
+        // Simulate investment suitability based on company age and status
+        const opportunityAnalysis = smeCompanies.map(company => {
+            const companyAge = company.commencement_date ?
+                currentYear - new Date(company.commencement_date).getFullYear() : 0;
+
+            // Calculate opportunity score based on various factors
+            let opportunityScore = 50; // Base score
+
+            // Age factor (mature companies are more stable)
+            if (companyAge >= 5) opportunityScore += 20;
+            else if (companyAge >= 2) opportunityScore += 10;
+
+            // Status factor
+            if (company.status === 'active') opportunityScore += 20;
+            if (company.status === 'approved') opportunityScore += 15;
+
+            // Industry alignment
+            if (company.industry === profileData?.industry) opportunityScore += 15;
+
+            return {
+                company: company.business_name || 'Unknown',
+                industry: company.industry || 'Unknown',
+                score: Math.min(100, opportunityScore),
+                age: companyAge,
+                status: company.status || 'unknown'
+            };
+        }).slice(0, 10); // Top 10 opportunities
+
+        // Monthly Analysis based on real API data patterns
+        const monthlyAnalysisData = [];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const currentMonth = new Date().getMonth();
+
+        // Group companies by creation month for actual monthly data
+        const companiesByMonth = {};
+        const activeSMEsByMonth = {};
+
+        // Initialize all months with 0
+        for (let i = 0; i <= currentMonth; i++) {
+            companiesByMonth[i] = 0;
+            activeSMEsByMonth[i] = 0;
+        }
+
+        // Count actual companies created each month
+        smeCompanies.forEach(company => {
+            if (company.created_at) {
+                const createdDate = new Date(company.created_at);
+                if (createdDate.getFullYear() === currentYear) {
+                    const month = createdDate.getMonth();
+                    if (month <= currentMonth) {
+                        companiesByMonth[month] = (companiesByMonth[month] || 0) + 1;
+                        if (company.status === 'active') {
+                            activeSMEsByMonth[month] = (activeSMEsByMonth[month] || 0) + 1;
+                        }
+                    }
+                }
+            }
+        });
+
+        // Calculate cumulative data for each month
+        let cumulativeTotal = 0;
+        let cumulativeActive = 0;
+
+        for (let i = 0; i <= currentMonth; i++) {
+            cumulativeTotal += companiesByMonth[i] || 0;
+            cumulativeActive += activeSMEsByMonth[i] || 0;
+
+            // Calculate investment opportunities based on active companies and their readiness
+            const monthActiveCompanies = cumulativeActive;
+            const monthApprovedCompanies = smeCompanies.filter(c =>
+                c.status === 'approved' &&
+                c.created_at &&
+                new Date(c.created_at).getMonth() <= i &&
+                new Date(c.created_at).getFullYear() === currentYear
+            ).length;
+
+            monthlyAnalysisData.push({
+                month: months[i],
+                totalSMEs: cumulativeTotal,
+                activeSMEs: monthActiveCompanies,
+                opportunities: monthActiveCompanies + monthApprovedCompanies, // Real investment-ready companies
+                newAdditions: companiesByMonth[i] || 0 // Actual new companies added this month
+            });
+        }
+
+        return {
+            industryDistribution: industryChartData,
+            statusDistribution: statusChartData,
+            companyTimeline: companyTimelineData,
+            opportunityAnalysis,
+            monthlyAnalysis: monthlyAnalysisData,
+            investmentCapacity: userInvestmentCapacity
+        };
+    };
+
     const metrics = calculateMetrics();
+    const chartData = generateChartData();
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -139,6 +318,8 @@ const InvestorDashboard = () => {
 
     const uniqueIndustries = [...new Set(smeCompanies.map(company => company.industry).filter(Boolean))];
 
+    const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#84cc16'];
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -152,8 +333,6 @@ const InvestorDashboard = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-
-
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Welcome Section */}
                 <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-xl text-white p-8 mb-8">
@@ -248,13 +427,160 @@ const InvestorDashboard = () => {
                     </div>
                 </div>
 
+                {/* Charts and Analytics Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    {/* Industry Distribution */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900">Industry Distribution</h3>
+                            <PieChart className="w-5 h-5 text-violet-600" />
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <RechartsPieChart>
+                                <Pie
+                                    data={chartData.industryDistribution}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    label={({ name, percentage }) => `${name}: ${percentage}%`}
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                >
+                                    {chartData.industryDistribution.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip formatter={(value, name) => [`${value} companies`, name]} />
+                            </RechartsPieChart>
+                        </ResponsiveContainer>
+                        <p className="text-sm text-gray-600 mt-2">
+                            {chartData.industryDistribution.length} industries • {metrics.totalCompanies} total companies
+                        </p>
+                    </div>
+
+                    {/* Monthly SME Analysis */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900">SME Market Trends</h3>
+                            <TrendingUp className="w-5 h-5 text-green-600" />
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <AreaChart data={chartData.monthlyAnalysis}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Area
+                                    type="monotone"
+                                    dataKey="activeSMEs"
+                                    stackId="1"
+                                    stroke="#10b981"
+                                    fill="#10b981"
+                                    fillOpacity={0.6}
+                                    name="Active SMEs"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="opportunities"
+                                    stackId="2"
+                                    stroke="#8b5cf6"
+                                    fill="#8b5cf6"
+                                    fillOpacity={0.6}
+                                    name="Investment Opportunities"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                        <p className="text-sm text-gray-600 mt-2">
+                            Current active SMEs: {metrics.activeCompanies} • Investment readiness tracking
+                        </p>
+                    </div>
+
+                    {/* Company Status Overview */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900">Company Status Overview</h3>
+                            <BarChart3 className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={chartData.statusDistribution}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip formatter={(value) => [`${value} companies`, 'Count']} />
+                                <Bar dataKey="value" fill="#06b6d4" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                        <p className="text-sm text-gray-600 mt-2">
+                            Company readiness levels based on current status data
+                        </p>
+                    </div>
+
+                    {/* Investment Opportunity Scores */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900">Top Investment Opportunities</h3>
+                            <Star className="w-5 h-5 text-yellow-600" />
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={chartData.opportunityAnalysis.slice(0, 6)} layout="horizontal">
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" domain={[0, 100]} />
+                                <YAxis dataKey="company" type="category" width={100} />
+                                <Tooltip formatter={(value) => [`${value}/100`, 'Opportunity Score']} />
+                                <Bar dataKey="score" fill="#f59e0b" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                        <p className="text-sm text-gray-600 mt-2">
+                            Scores based on company age, status, and industry alignment with your profile
+                        </p>
+                    </div>
+                </div>
+
+                {/* Company Timeline */}
+                {chartData.companyTimeline.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900">Company Establishment Timeline</h3>
+                            <Calendar className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={chartData.companyTimeline}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="year" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Line
+                                    type="monotone"
+                                    dataKey="companies"
+                                    stroke="#6366f1"
+                                    strokeWidth={3}
+                                    name="New Companies"
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="cumulative"
+                                    stroke="#10b981"
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    name="Cumulative Total"
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        <p className="text-sm text-gray-600 mt-2">
+                            Timeline of SME company establishments over the past decade
+                        </p>
+                    </div>
+                )}
+
                 {/* Tab Navigation */}
                 <div className="mb-8">
                     <div className="border-b border-gray-200">
                         <nav className="-mb-px flex space-x-8">
                             {[
                                 { id: 'overview', label: 'Overview', icon: PieChart },
-                                { id: 'explore', label: 'Explore SMEs', icon: Building },
                                 { id: 'profile', label: 'My Profile', icon: User }
                             ].map((tab) => {
                                 const Icon = tab.icon;
@@ -371,26 +697,46 @@ const InvestorDashboard = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
 
-                {activeTab === 'investments' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-gray-900">Investment Portfolio</h3>
-                        </div>
+                            {/* Market Insights */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Insights</h3>
+                                <div className="space-y-4">
+                                    <div className="p-3 bg-green-50 rounded-lg">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <TrendingUp className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm font-medium text-green-800">Market Growth</span>
+                                        </div>
+                                        <p className="text-xs text-green-700">
+                                            {metrics.activeCompanies > metrics.totalCompanies * 0.7 ?
+                                                'Strong market activity with high engagement rates' :
+                                                'Steady market growth with emerging opportunities'}
+                                        </p>
+                                    </div>
 
-                        <div className="text-center py-12">
-                            <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">Investment Feature Coming Soon</h3>
-                            <p className="text-gray-600 mb-6">Investment tracking and portfolio management will be available in future updates</p>
-                            <button
-                                onClick={() => setActiveTab('explore')}
-                                className="px-6 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
-                            >
-                                Explore SME Opportunities
-                            </button>
+                                    <div className="p-3 bg-blue-50 rounded-lg">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <Target className="w-4 h-4 text-blue-600" />
+                                            <span className="text-sm font-medium text-blue-800">Industry Focus</span>
+                                        </div>
+                                        <p className="text-xs text-blue-700">
+                                            {profileData?.industry ?
+                                                `${chartData.industryDistribution.find(i => i.name === profileData.industry)?.value || 0} companies in your focus area` :
+                                                `${metrics.industries} diverse industries available`}
+                                        </p>
+                                    </div>
+
+                                    <div className="p-3 bg-purple-50 rounded-lg">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <Star className="w-4 h-4 text-purple-600" />
+                                            <span className="text-sm font-medium text-purple-800">Investment Match</span>
+                                        </div>
+                                        <p className="text-xs text-purple-700">
+                                            {chartData.opportunityAnalysis.filter(o => o.score >= 70).length} high-potential matches for your profile
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

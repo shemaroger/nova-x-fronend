@@ -24,6 +24,11 @@ import AnalysisListing from '../pages/Analysis/AnalysisListing';
 import UserRegistrationReportPage from '../pages/Report/UserRegistrationReportPage';
 import PaymentsReportPage from '../pages/Report/PaymentsReportPage';
 import Landingpage from '../pages/Landingpage';
+import SubscriptionReportPage from '../pages/Report/SubscriptionReportPage';
+import HelpAndSupport from '../pages/HelpAndSupport/HelpAndSupport';
+import UserHelp from '../pages/HelpAndSupport/userhelp';
+import SupportChat from '../pages/HelpAndSupport/SupportChat';
+import AdminSupportChat from '../pages/HelpAndSupport/AdminSupportChat';
 
 export const routes = [
     { path: '/signup', component: Signup, name: 'Signup' },
@@ -58,6 +63,13 @@ export const routes = [
             { path: 'analysis-listing', component: AnalysisListing, name: 'analysis-listing' },
             { path: 'user-registration-report', component: UserRegistrationReportPage, name: 'user-registration-report' },
             { path: 'payments-report', component: PaymentsReportPage, name: 'payments-report' },
+            { path: 'subscription-report', component: SubscriptionReportPage, name: 'subscription-report' },
+            { path: 'help-and-support', component: HelpAndSupport, name: 'help-and-support' },
+            { path: 'user-help', component: UserHelp, name: 'user-help' },
+            { path: 'support-chat', component: SupportChat, name: 'support-chat' },
+            { path: 'admin-support-chat', component: AdminSupportChat, name: 'admin-support-chat' },
+
+
 
 
         ]

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    CreditCard,
+    Users,
     Check,
     X,
     Clock,
@@ -25,63 +25,61 @@ import {
     Badge,
     Building,
     Mail,
-    Phone
+    Phone,
+    CreditCard,
+    Target,
+    Activity,
+    UserCheck,
+    UserX,
+    Zap,
+    Pause,
+    AlertTriangle
 } from 'lucide-react';
-import { getPayment } from '../Service/api';
+import { getSubscription } from '../Service/api';
 
-const PaymentsReportPage = () => {
-    const [payments, setPayments] = useState([]);
-    const [filteredPayments, setFilteredPayments] = useState([]);
+const SubscriptionReportPage = () => {
+    const [subscriptions, setSubscriptions] = useState([]);
+    const [filteredSubscriptions, setFilteredSubscriptions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [approvalFilter, setApprovalFilter] = useState('all');
+    const [planFilter, setPlanFilter] = useState('all');
+    const [cancelationFilter, setCancelationFilter] = useState('all');
 
-    // Report Configuration State
     const [reportConfig, setReportConfig] = useState({
-        title: 'Payments Analysis Report',
-        subtitle: 'Comprehensive financial transaction analysis',
+        title: 'Subscription Analysis Report',
+        subtitle: 'Comprehensive subscription management analysis',
         logo: null,
         logoPreview: null,
         includeCharts: true,
         includeTable: true,
         includeSummary: true,
-        includeUserBreakdown: true
+        includeRetentionAnalysis: true,
+        includePlanBreakdown: true
     });
 
-    // Updated Date Range State - removed preset, simplified to from/to dates
     const [dateRange, setDateRange] = useState({
         fromDate: '',
         toDate: ''
     });
 
-    // Show report preview
     const [showReportPreview, setShowReportPreview] = useState(false);
-
-    // Status configuration
     const statusConfig = {
-        'pending': {
-            color: 'yellow',
-            icon: Clock,
-            bg: 'bg-yellow-100',
-            text: 'text-yellow-800',
-            border: 'border-yellow-200'
-        },
-        'requires_action': {
-            color: 'orange',
-            icon: AlertCircle,
-            bg: 'bg-orange-100',
-            text: 'text-orange-800',
-            border: 'border-orange-200'
-        },
-        'succeeded': {
+        'active': {
             color: 'green',
             icon: CheckCircle,
             bg: 'bg-green-100',
             text: 'text-green-800',
             border: 'border-green-200'
         },
-        'failed': {
+        'past_due': {
+            color: 'orange',
+            icon: AlertCircle,
+            bg: 'bg-orange-100',
+            text: 'text-orange-800',
+            border: 'border-orange-200'
+        },
+        'unpaid': {
             color: 'red',
             icon: XCircle,
             bg: 'bg-red-100',
@@ -90,14 +88,34 @@ const PaymentsReportPage = () => {
         },
         'canceled': {
             color: 'gray',
-            icon: XCircle,
+            icon: UserX,
             bg: 'bg-gray-100',
             text: 'text-gray-800',
             border: 'border-gray-200'
+        },
+        'incomplete': {
+            color: 'yellow',
+            icon: Clock,
+            bg: 'bg-yellow-100',
+            text: 'text-yellow-800',
+            border: 'border-yellow-200'
+        },
+        'incomplete_expired': {
+            color: 'red',
+            icon: AlertTriangle,
+            bg: 'bg-red-100',
+            text: 'text-red-800',
+            border: 'border-red-200'
+        },
+        'trialing': {
+            color: 'blue',
+            icon: Zap,
+            bg: 'bg-blue-100',
+            text: 'text-blue-800',
+            border: 'border-blue-200'
         }
     };
 
-    // Currency symbols mapping
     const currencySymbols = {
         'usd': '$',
         'eur': '€',
@@ -105,113 +123,106 @@ const PaymentsReportPage = () => {
         'cad': 'C$'
     };
 
-    // Toast notification function
+
     const showToast = (message, type = 'info') => {
         console.log(`${type.toUpperCase()}: ${message}`);
     };
 
-    // Fetch payments from API - using real data
-    const fetchPayments = async () => {
+    // Fetch subscriptions from API
+    const fetchSubscriptions = async () => {
         setIsLoading(true);
         try {
-            const data = await getPayment();
-            console.log('Fetched payments data:', data);
-            const paymentsArray = data.results || data || [];
-            setPayments(paymentsArray);
-            applyFilters(paymentsArray);
+            const data = await getSubscription();
+            console.log('Fetched subscriptions data:', data);
+            const subscriptionsArray = data.results || data || [];
+            setSubscriptions(subscriptionsArray);
+            applyFilters(subscriptionsArray);
         } catch (error) {
-            console.error('Error fetching payments:', error);
-            showToast('Failed to load payments', 'error');
-            setPayments([]);
-            setFilteredPayments([]);
+            console.error('Error fetching subscriptions:', error);
+            showToast('Failed to load subscriptions', 'error');
+            setSubscriptions([]);
+            setFilteredSubscriptions([]);
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchPayments();
+        fetchSubscriptions();
     }, []);
 
-    // Updated apply filters function
-    const applyFilters = (paymentsData = payments) => {
-        let filtered = paymentsData;
+    // Apply filters
+    const applyFilters = (subscriptionsData = subscriptions) => {
+        let filtered = subscriptionsData;
 
         // Search filter
         if (searchTerm) {
-            filtered = filtered.filter(payment =>
-                payment.user_info?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                payment.user_info?.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                payment.stripe_payment_intent_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                payment.Subscription_info?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+            filtered = filtered.filter(subscription =>
+                subscription.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                subscription.user?.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                subscription.plan?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                subscription.stripe_subscription_id?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
         // Status filter
         if (statusFilter !== 'all') {
-            filtered = filtered.filter(payment => payment.status === statusFilter);
+            filtered = filtered.filter(subscription => subscription.status === statusFilter);
         }
 
-        // Approval filter
-        if (approvalFilter !== 'all') {
-            if (approvalFilter === 'requires_approval') {
-                filtered = filtered.filter(payment => payment.requires_approval && !payment.approved_by);
-            } else if (approvalFilter === 'approved') {
-                filtered = filtered.filter(payment => payment.approved_by);
-            } else if (approvalFilter === 'not_approved') {
-                filtered = filtered.filter(payment => payment.requires_approval && !payment.approved_by);
+        // Plan filter
+        if (planFilter !== 'all') {
+            filtered = filtered.filter(subscription => subscription.plan?.id?.toString() === planFilter);
+        }
+
+        // Cancelation filter
+        if (cancelationFilter !== 'all') {
+            if (cancelationFilter === 'cancel_at_period_end') {
+                filtered = filtered.filter(subscription => subscription.cancel_at_period_end);
+            } else if (cancelationFilter === 'canceled') {
+                filtered = filtered.filter(subscription => subscription.canceled_at);
+            } else if (cancelationFilter === 'active_renewal') {
+                filtered = filtered.filter(subscription => !subscription.cancel_at_period_end && !subscription.canceled_at);
             }
         }
 
-        // Date range filter - updated to use fromDate and toDate
+        // Date range filter (based on created_at)
         if (dateRange.fromDate && dateRange.toDate) {
             const startDate = new Date(dateRange.fromDate);
             const endDate = new Date(dateRange.toDate);
-            endDate.setHours(23, 59, 59, 999); // Include the entire end date
+            endDate.setHours(23, 59, 59, 999);
 
-            filtered = filtered.filter(payment => {
-                const paymentDate = new Date(payment.created_at);
-                return paymentDate >= startDate && paymentDate <= endDate;
+            filtered = filtered.filter(subscription => {
+                const subscriptionDate = new Date(subscription.created_at);
+                return subscriptionDate >= startDate && subscriptionDate <= endDate;
             });
         } else if (dateRange.fromDate) {
-            // Only from date specified
             const startDate = new Date(dateRange.fromDate);
-            filtered = filtered.filter(payment => new Date(payment.created_at) >= startDate);
+            filtered = filtered.filter(subscription => new Date(subscription.created_at) >= startDate);
         } else if (dateRange.toDate) {
-            // Only to date specified
             const endDate = new Date(dateRange.toDate);
             endDate.setHours(23, 59, 59, 999);
-            filtered = filtered.filter(payment => new Date(payment.created_at) <= endDate);
+            filtered = filtered.filter(subscription => new Date(subscription.created_at) <= endDate);
         }
 
-        setFilteredPayments(filtered);
+        setFilteredSubscriptions(filtered);
     };
 
     useEffect(() => {
         applyFilters();
-    }, [payments, searchTerm, statusFilter, approvalFilter, dateRange]);
+    }, [subscriptions, searchTerm, statusFilter, planFilter, cancelationFilter, dateRange]);
 
-    // Updated date handlers
+    // Date handlers
     const handleFromDateChange = (date) => {
-        setDateRange(prev => ({
-            ...prev,
-            fromDate: date
-        }));
+        setDateRange(prev => ({ ...prev, fromDate: date }));
     };
 
     const handleToDateChange = (date) => {
-        setDateRange(prev => ({
-            ...prev,
-            toDate: date
-        }));
+        setDateRange(prev => ({ ...prev, toDate: date }));
     };
 
-    // Clear date filters
     const clearDateFilters = () => {
-        setDateRange({
-            fromDate: '',
-            toDate: ''
-        });
+        setDateRange({ fromDate: '', toDate: '' });
     };
 
     // Handle logo upload
@@ -240,7 +251,6 @@ const PaymentsReportPage = () => {
         }
     };
 
-    // Remove logo
     const removeLogo = () => {
         setReportConfig(prev => ({
             ...prev,
@@ -250,7 +260,7 @@ const PaymentsReportPage = () => {
     };
 
     // Format price with currency
-    const formatPrice = (amount, currency) => {
+    const formatPrice = (amount, currency = 'usd') => {
         const symbol = currencySymbols[currency] || '$';
         return `${symbol}${parseFloat(amount || 0).toFixed(2)}`;
     };
@@ -270,13 +280,13 @@ const PaymentsReportPage = () => {
 
     // Status Badge Component
     const StatusBadge = ({ status }) => {
-        const config = statusConfig[status] || statusConfig['pending'];
+        const config = statusConfig[status] || statusConfig['incomplete'];
         const Icon = config.icon;
 
         return (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text} ${config.border} border`}>
                 <Icon className="w-3 h-3 mr-1" />
-                {status}
+                {status.replace('_', ' ')}
             </span>
         );
     };
@@ -284,57 +294,72 @@ const PaymentsReportPage = () => {
     // Calculate comprehensive statistics
     const getComprehensiveStats = () => {
         const stats = {
-            total: filteredPayments.length,
-            pending: filteredPayments.filter(p => p.status === 'pending').length,
-            requiresAction: filteredPayments.filter(p => p.status === 'requires_action').length,
-            succeeded: filteredPayments.filter(p => p.status === 'succeeded').length,
-            failed: filteredPayments.filter(p => p.status === 'failed').length,
-            canceled: filteredPayments.filter(p => p.status === 'canceled').length,
-            requiresApproval: filteredPayments.filter(p => p.requires_approval && !p.approved_by).length,
-            approved: filteredPayments.filter(p => p.approved_by).length
+            total: filteredSubscriptions.length,
+            active: filteredSubscriptions.filter(s => s.status === 'active').length,
+            pastDue: filteredSubscriptions.filter(s => s.status === 'past_due').length,
+            unpaid: filteredSubscriptions.filter(s => s.status === 'unpaid').length,
+            canceled: filteredSubscriptions.filter(s => s.status === 'canceled').length,
+            incomplete: filteredSubscriptions.filter(s => s.status === 'incomplete').length,
+            incompleteExpired: filteredSubscriptions.filter(s => s.status === 'incomplete_expired').length,
+            trialing: filteredSubscriptions.filter(s => s.status === 'trialing').length,
+            cancelAtPeriodEnd: filteredSubscriptions.filter(s => s.cancel_at_period_end).length,
+            recentCancellations: filteredSubscriptions.filter(s => s.canceled_at).length
         };
 
-        // Revenue calculations
-        stats.totalRevenue = filteredPayments
-            .filter(p => p.status === 'succeeded')
-            .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        // Revenue calculations (assuming plan has price field)
+        stats.totalMRR = filteredSubscriptions
+            .filter(s => s.status === 'active' || s.status === 'trialing')
+            .reduce((sum, s) => sum + parseFloat(s.plan?.price || 0), 0);
 
-        stats.pendingRevenue = filteredPayments
-            .filter(p => p.status === 'pending' || p.status === 'requires_action')
-            .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        stats.pastDueRevenue = filteredSubscriptions
+            .filter(s => s.status === 'past_due')
+            .reduce((sum, s) => sum + parseFloat(s.plan?.price || 0), 0);
 
-        stats.averageTransaction = stats.succeeded > 0 ? stats.totalRevenue / stats.succeeded : 0;
+        // Health metrics
+        stats.healthySubscriptions = stats.active + stats.trialing;
+        stats.atRiskSubscriptions = stats.pastDue + stats.unpaid;
+        stats.churnRate = stats.total > 0 ? ((stats.canceled / stats.total) * 100).toFixed(1) : 0;
+        stats.activeRate = stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : 0;
+        stats.trialConversionOpportunity = stats.trialing;
 
-        // Success rates
-        stats.successRate = stats.total > 0 ? ((stats.succeeded / stats.total) * 100).toFixed(1) : 0;
-        stats.failureRate = stats.total > 0 ? ((stats.failed / stats.total) * 100).toFixed(1) : 0;
-        stats.approvalRate = filteredPayments.filter(p => p.requires_approval).length > 0
-            ? ((stats.approved / filteredPayments.filter(p => p.requires_approval).length) * 100).toFixed(1)
-            : 0;
+        // Period analysis
+        const now = new Date();
+        stats.expiringThisMonth = filteredSubscriptions.filter(s => {
+            if (!s.current_period_end) return false;
+            const endDate = new Date(s.current_period_end);
+            return endDate.getMonth() === now.getMonth() && endDate.getFullYear() === now.getFullYear();
+        }).length;
 
         return stats;
     };
 
-    // Get payments by date for trends
-    const getPaymentsByDate = () => {
+    // Get unique plans for filter dropdown
+    const getUniquePlans = () => {
+        const planMap = new Map();
+        subscriptions.forEach(subscription => {
+            if (subscription.plan) {
+                planMap.set(subscription.plan.id, subscription.plan);
+            }
+        });
+        return Array.from(planMap.values());
+    };
+
+    // Get subscription trends by date
+    const getSubscriptionsByDate = () => {
         const dateGroups = {};
-        filteredPayments.forEach(payment => {
-            const date = new Date(payment.created_at).toLocaleDateString();
+        filteredSubscriptions.forEach(subscription => {
+            const date = new Date(subscription.created_at).toLocaleDateString();
             if (!dateGroups[date]) {
                 dateGroups[date] = {
                     total: 0,
-                    succeeded: 0,
-                    pending: 0,
-                    failed: 0,
-                    requires_action: 0,
-                    revenue: 0
+                    active: 0,
+                    canceled: 0,
+                    trialing: 0,
+                    past_due: 0
                 };
             }
             dateGroups[date].total++;
-            dateGroups[date][payment.status]++;
-            if (payment.status === 'succeeded') {
-                dateGroups[date].revenue += parseFloat(payment.amount || 0);
-            }
+            dateGroups[date][subscription.status]++;
         });
 
         return Object.entries(dateGroups)
@@ -342,53 +367,51 @@ const PaymentsReportPage = () => {
             .sort((a, b) => new Date(a.date) - new Date(b.date));
     };
 
-    // Get subscription breakdown
-    const getSubscriptionBreakdown = () => {
-        const subscriptionGroups = {};
-        filteredPayments.forEach(payment => {
-            const subscriptionName = payment.Subscription_info?.name || 'No Subscription';
-            if (!subscriptionGroups[subscriptionName]) {
-                subscriptionGroups[subscriptionName] = {
+    // Get plan breakdown
+    const getPlanBreakdown = () => {
+        const planGroups = {};
+        filteredSubscriptions.forEach(subscription => {
+            const planName = subscription.plan?.name || 'No Plan';
+            if (!planGroups[planName]) {
+                planGroups[planName] = {
                     count: 0,
+                    active: 0,
+                    canceled: 0,
                     revenue: 0,
-                    succeeded: 0,
-                    failed: 0
+                    trialing: 0
                 };
             }
-            subscriptionGroups[subscriptionName].count++;
-            if (payment.status === 'succeeded') {
-                subscriptionGroups[subscriptionName].succeeded++;
-                subscriptionGroups[subscriptionName].revenue += parseFloat(payment.amount || 0);
-            } else if (payment.status === 'failed') {
-                subscriptionGroups[subscriptionName].failed++;
+            planGroups[planName].count++;
+            planGroups[planName][subscription.status]++;
+            if (subscription.status === 'active' || subscription.status === 'trialing') {
+                planGroups[planName].revenue += parseFloat(subscription.plan?.price || 0);
             }
         });
 
-        return Object.entries(subscriptionGroups)
+        return Object.entries(planGroups)
             .map(([name, stats]) => ({ name, ...stats }))
             .sort((a, b) => b.revenue - a.revenue);
     };
 
-    // Generate and download report
     const generateReport = () => {
         setShowReportPreview(true);
     };
 
-    // Print report
     const printReport = () => {
         window.print();
     };
 
     const stats = getComprehensiveStats();
-    const paymentsByDate = getPaymentsByDate();
-    const subscriptionBreakdown = getSubscriptionBreakdown();
+    const subscriptionsByDate = getSubscriptionsByDate();
+    const planBreakdown = getPlanBreakdown();
+    const uniquePlans = getUniquePlans();
 
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading payments data...</p>
+                    <p className="text-gray-600">Loading subscription data...</p>
                 </div>
             </div>
         );
@@ -424,7 +447,7 @@ const PaymentsReportPage = () => {
                                         ? `Until ${dateRange.toDate}`
                                         : 'All Time'
                         }</p>
-                        <p>Total Records: {filteredPayments.length}</p>
+                        <p>Total Subscriptions: {filteredSubscriptions.length}</p>
                     </div>
                 </div>
             </div>
@@ -438,9 +461,9 @@ const PaymentsReportPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex items-center">
-                                <CreditCard className="w-8 h-8 text-blue-600 mr-3" />
+                                <Users className="w-8 h-8 text-blue-600 mr-3" />
                                 <div>
-                                    <p className="text-sm font-medium text-blue-600">Total Payments</p>
+                                    <p className="text-sm font-medium text-blue-600">Total Subscriptions</p>
                                     <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
                                 </div>
                             </div>
@@ -448,32 +471,32 @@ const PaymentsReportPage = () => {
 
                         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                             <div className="flex items-center">
-                                <DollarSign className="w-8 h-8 text-green-600 mr-3" />
+                                <CheckCircle className="w-8 h-8 text-green-600 mr-3" />
                                 <div>
-                                    <p className="text-sm font-medium text-green-600">Total Revenue</p>
-                                    <p className="text-2xl font-bold text-green-900">
-                                        {formatPrice(stats.totalRevenue, 'usd')}
-                                    </p>
+                                    <p className="text-sm font-medium text-green-600">Active Subscriptions</p>
+                                    <p className="text-2xl font-bold text-green-900">{stats.active}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                             <div className="flex items-center">
-                                <TrendingUp className="w-8 h-8 text-purple-600 mr-3" />
+                                <DollarSign className="w-8 h-8 text-purple-600 mr-3" />
                                 <div>
-                                    <p className="text-sm font-medium text-purple-600">Success Rate</p>
-                                    <p className="text-2xl font-bold text-purple-900">{stats.successRate}%</p>
+                                    <p className="text-sm font-medium text-purple-600">Monthly Revenue</p>
+                                    <p className="text-2xl font-bold text-purple-900">
+                                        {formatPrice(stats.totalMRR, 'usd')}
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                             <div className="flex items-center">
-                                <Clock className="w-8 h-8 text-orange-600 mr-3" />
+                                <TrendingDown className="w-8 h-8 text-orange-600 mr-3" />
                                 <div>
-                                    <p className="text-sm font-medium text-orange-600">Pending Approval</p>
-                                    <p className="text-2xl font-bold text-orange-900">{stats.requiresApproval}</p>
+                                    <p className="text-sm font-medium text-orange-600">Churn Rate</p>
+                                    <p className="text-2xl font-bold text-orange-900">{stats.churnRate}%</p>
                                 </div>
                             </div>
                         </div>
@@ -482,27 +505,31 @@ const PaymentsReportPage = () => {
                     {/* Status Breakdown */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div className="bg-gray-50 rounded-lg p-4">
-                            <h3 className="font-semibold text-gray-900 mb-3">Payment Status Breakdown</h3>
+                            <h3 className="font-semibold text-gray-900 mb-3">Subscription Status Breakdown</h3>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Succeeded:</span>
-                                    <span className="font-medium text-green-600">{stats.succeeded}</span>
+                                    <span className="text-sm text-gray-600">Active:</span>
+                                    <span className="font-medium text-green-600">{stats.active}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Pending:</span>
-                                    <span className="font-medium text-yellow-600">{stats.pending}</span>
+                                    <span className="text-sm text-gray-600">Trialing:</span>
+                                    <span className="font-medium text-blue-600">{stats.trialing}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Requires Action:</span>
-                                    <span className="font-medium text-orange-600">{stats.requiresAction}</span>
+                                    <span className="text-sm text-gray-600">Past Due:</span>
+                                    <span className="font-medium text-orange-600">{stats.pastDue}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Failed:</span>
-                                    <span className="font-medium text-red-600">{stats.failed}</span>
+                                    <span className="text-sm text-gray-600">Unpaid:</span>
+                                    <span className="font-medium text-red-600">{stats.unpaid}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-sm text-gray-600">Canceled:</span>
                                     <span className="font-medium text-gray-600">{stats.canceled}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600">Incomplete:</span>
+                                    <span className="font-medium text-yellow-600">{stats.incomplete}</span>
                                 </div>
                             </div>
                         </div>
@@ -510,11 +537,12 @@ const PaymentsReportPage = () => {
                         <div className="bg-gray-50 rounded-lg p-4">
                             <h3 className="font-semibold text-gray-900 mb-3">Key Insights</h3>
                             <ul className="text-sm text-gray-700 space-y-2">
-                                <li>• Average transaction value: {formatPrice(stats.averageTransaction, 'usd')}</li>
-                                <li>• Success rate: {stats.successRate}% indicates {stats.successRate >= 80 ? 'excellent' : stats.successRate >= 60 ? 'good' : 'concerning'} performance</li>
-                                <li>• Pending revenue: {formatPrice(stats.pendingRevenue, 'usd')}</li>
-                                <li>• Approval rate: {stats.approvalRate}% for payments requiring approval</li>
-                                {stats.failed > 0 && <li>• {stats.failed} failed payments require investigation</li>}
+                                <li>• {stats.healthySubscriptions} healthy subscriptions ({((stats.healthySubscriptions / stats.total) * 100).toFixed(1)}%)</li>
+                                <li>• {stats.atRiskSubscriptions} at-risk subscriptions requiring attention</li>
+                                <li>• {stats.cancelAtPeriodEnd} subscriptions set to cancel at period end</li>
+                                <li>• {stats.expiringThisMonth} subscriptions expiring this month</li>
+                                <li>• {stats.trialConversionOpportunity} trial conversions opportunity</li>
+                                <li>• At-risk revenue: {formatPrice(stats.pastDueRevenue, 'usd')}</li>
                             </ul>
                         </div>
                     </div>
@@ -522,83 +550,80 @@ const PaymentsReportPage = () => {
             )}
 
             {/* Charts Section */}
-            {reportConfig.includeCharts && paymentsByDate.length > 0 && (
+            {reportConfig.includeCharts && subscriptionsByDate.length > 0 && (
                 <div className="mb-8">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment Trends & Analytics</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Subscription Trends & Analytics</h2>
 
                     {/* Daily Trends */}
                     <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                        <h3 className="font-medium text-gray-900 mb-4">Daily Payment Activity</h3>
+                        <h3 className="font-medium text-gray-900 mb-4">Daily Subscription Activity</h3>
                         <div className="space-y-3">
-                            {paymentsByDate.slice(-10).map((day, index) => (
+                            {subscriptionsByDate.slice(-10).map((day, index) => (
                                 <div key={index} className="flex items-center">
                                     <div className="w-24 text-xs text-gray-600">{day.date}</div>
                                     <div className="flex-1 mx-3">
                                         <div className="flex bg-gray-200 rounded-full h-4 overflow-hidden">
                                             <div
                                                 className="bg-green-500 h-full"
-                                                style={{ width: `${day.total > 0 ? (day.succeeded / day.total) * 100 : 0}%` }}
+                                                style={{ width: `${day.total > 0 ? (day.active / day.total) * 100 : 0}%` }}
                                             ></div>
                                             <div
-                                                className="bg-yellow-500 h-full"
-                                                style={{ width: `${day.total > 0 ? (day.pending / day.total) * 100 : 0}%` }}
+                                                className="bg-blue-500 h-full"
+                                                style={{ width: `${day.total > 0 ? (day.trialing / day.total) * 100 : 0}%` }}
                                             ></div>
                                             <div
                                                 className="bg-orange-500 h-full"
-                                                style={{ width: `${day.total > 0 ? (day.requires_action / day.total) * 100 : 0}%` }}
+                                                style={{ width: `${day.total > 0 ? (day.past_due / day.total) * 100 : 0}%` }}
                                             ></div>
                                             <div
-                                                className="bg-red-500 h-full"
-                                                style={{ width: `${day.total > 0 ? (day.failed / day.total) * 100 : 0}%` }}
+                                                className="bg-gray-500 h-full"
+                                                style={{ width: `${day.total > 0 ? (day.canceled / day.total) * 100 : 0}%` }}
                                             ></div>
                                         </div>
                                     </div>
                                     <div className="w-12 text-xs text-gray-600 text-right">{day.total}</div>
-                                    <div className="w-16 text-xs text-gray-600 text-right">
-                                        {formatPrice(day.revenue, 'usd')}
-                                    </div>
                                 </div>
                             ))}
                         </div>
                         <div className="flex items-center justify-center space-x-6 mt-4 text-xs">
                             <div className="flex items-center">
                                 <div className="w-3 h-3 bg-green-500 rounded mr-1"></div>
-                                <span>Succeeded</span>
+                                <span>Active</span>
                             </div>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-yellow-500 rounded mr-1"></div>
-                                <span>Pending</span>
+                                <div className="w-3 h-3 bg-blue-500 rounded mr-1"></div>
+                                <span>Trialing</span>
                             </div>
                             <div className="flex items-center">
                                 <div className="w-3 h-3 bg-orange-500 rounded mr-1"></div>
-                                <span>Requires Action</span>
+                                <span>Past Due</span>
                             </div>
                             <div className="flex items-center">
-                                <div className="w-3 h-3 bg-red-500 rounded mr-1"></div>
-                                <span>Failed</span>
+                                <div className="w-3 h-3 bg-gray-500 rounded mr-1"></div>
+                                <span>Canceled</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Subscription Breakdown */}
-                    {subscriptionBreakdown.length > 0 && (
+                    {/* Plan Breakdown */}
+                    {reportConfig.includePlanBreakdown && planBreakdown.length > 0 && (
                         <div className="bg-gray-50 rounded-lg p-6">
-                            <h3 className="font-medium text-gray-900 mb-4">Subscription Performance</h3>
+                            <h3 className="font-medium text-gray-900 mb-4">Plan Performance</h3>
                             <div className="space-y-3">
-                                {subscriptionBreakdown.map((sub, index) => (
+                                {planBreakdown.map((plan, index) => (
                                     <div key={index} className="flex items-center justify-between">
                                         <div className="flex-1">
-                                            <div className="font-medium text-gray-900">{sub.name}</div>
+                                            <div className="font-medium text-gray-900">{plan.name}</div>
                                             <div className="text-sm text-gray-600">
-                                                {sub.count} payments • {sub.succeeded} successful
+                                                {plan.count} subscriptions • {plan.active} active • {plan.trialing} trialing
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <div className="font-semibold text-green-600">
-                                                {formatPrice(sub.revenue, 'usd')}
+                                                {formatPrice(plan.revenue, 'usd')}
                                             </div>
                                             <div className="text-xs text-gray-500">
-                                                {sub.count > 0 ? ((sub.succeeded / sub.count) * 100).toFixed(1) : 0}% success
+                                                {plan.count > 0 ? (((plan.active + plan.trialing) / plan.count) * 100).toFixed(1) : 0}% healthy
                                             </div>
                                         </div>
                                     </div>
@@ -612,76 +637,153 @@ const PaymentsReportPage = () => {
             {/* Detailed Table */}
             {reportConfig.includeTable && (
                 <div className="mb-8">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment Details</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Subscription Details</h2>
                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">User</th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Amount</th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Subscription</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Plan</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Approval</th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Current Period</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Cancellation</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {filteredPayments.slice(0, 50).map((payment) => (
-                                    <tr key={payment.id}>
+                                {filteredSubscriptions.slice(0, 50).map((subscription) => (
+                                    <tr key={subscription.id}>
                                         <td className="px-4 py-3">
                                             <div>
                                                 <div className="font-medium text-gray-900">
-                                                    {payment.user_info?.display_name || 'Unknown'}
+                                                    {subscription.user?.display_name || subscription.user?.email || 'Unknown'}
                                                 </div>
-                                                <div className="text-gray-500">
-                                                    {payment.user_info?.email || 'No email'}
+                                                <div className="text-gray-500 text-xs">
+                                                    {subscription.user?.email || 'No email'}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <div className="font-semibold text-gray-900">
-                                                {formatPrice(payment.amount, payment.currency)}
+                                            <div className="font-medium text-gray-900">
+                                                {subscription.plan?.name || 'No Plan'}
                                             </div>
-                                            <div className="text-gray-500 uppercase text-xs">
-                                                {payment.currency}
+                                            <div className="text-gray-500 text-xs">
+                                                {subscription.plan?.price ? formatPrice(subscription.plan.price, 'usd') : 'N/A'}
                                             </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-900">
-                                            {payment.Subscription_info?.name || 'N/A'}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <StatusBadge status={payment.status} />
+                                            <StatusBadge status={subscription.status} />
                                         </td>
                                         <td className="px-4 py-3">
-                                            {payment.requires_approval ? (
-                                                payment.approved_by ? (
-                                                    <span className="text-green-600 text-xs">Approved</span>
-                                                ) : (
-                                                    <span className="text-orange-600 text-xs">Pending</span>
-                                                )
+                                            <div className="text-xs">
+                                                <div className="text-gray-600">
+                                                    Start: {formatDate(subscription.current_period_start)}
+                                                </div>
+                                                <div className="text-gray-600">
+                                                    End: {formatDate(subscription.current_period_end)}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {subscription.cancel_at_period_end ? (
+                                                <span className="text-orange-600 text-xs">Cancel at Period End</span>
+                                            ) : subscription.canceled_at ? (
+                                                <div className="text-xs">
+                                                    <span className="text-red-600">Canceled</span>
+                                                    <div className="text-gray-500">{formatDate(subscription.canceled_at)}</div>
+                                                </div>
                                             ) : (
-                                                <span className="text-gray-500 text-xs">N/A</span>
+                                                <span className="text-green-600 text-xs">Active Renewal</span>
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-gray-600">
-                                            {formatDate(payment.created_at)}
+                                            {formatDate(subscription.created_at)}
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                        {filteredPayments.length > 50 && (
+                        {filteredSubscriptions.length > 50 && (
                             <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
-                                Showing first 50 of {filteredPayments.length} records
+                                Showing first 50 of {filteredSubscriptions.length} records
                             </div>
                         )}
                     </div>
                 </div>
             )}
 
+            {/* Retention Analysis */}
+            {reportConfig.includeRetentionAnalysis && (
+                <div className="mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Retention & Risk Analysis</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Healthy Subscriptions */}
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div className="flex items-center mb-3">
+                                <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                                <h3 className="font-medium text-green-900">Healthy Subscriptions</h3>
+                            </div>
+                            <div className="text-2xl font-bold text-green-900 mb-2">{stats.healthySubscriptions}</div>
+                            <div className="text-sm text-green-700">
+                                {((stats.healthySubscriptions / stats.total) * 100).toFixed(1)}% of total
+                            </div>
+                            <div className="text-xs text-green-600 mt-2">
+                                Active + Trialing subscriptions
+                            </div>
+                        </div>
+
+                        {/* At-Risk Subscriptions */}
+                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                            <div className="flex items-center mb-3">
+                                <AlertTriangle className="w-5 h-5 text-orange-600 mr-2" />
+                                <h3 className="font-medium text-orange-900">At-Risk Subscriptions</h3>
+                            </div>
+                            <div className="text-2xl font-bold text-orange-900 mb-2">{stats.atRiskSubscriptions}</div>
+                            <div className="text-sm text-orange-700">
+                                {stats.total > 0 ? ((stats.atRiskSubscriptions / stats.total) * 100).toFixed(1) : 0}% of total
+                            </div>
+                            <div className="text-xs text-orange-600 mt-2">
+                                Past Due + Unpaid subscriptions
+                            </div>
+                        </div>
+
+                        {/* Scheduled Cancellations */}
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-center mb-3">
+                                <UserX className="w-5 h-5 text-red-600 mr-2" />
+                                <h3 className="font-medium text-red-900">Scheduled Cancellations</h3>
+                            </div>
+                            <div className="text-2xl font-bold text-red-900 mb-2">{stats.cancelAtPeriodEnd}</div>
+                            <div className="text-sm text-red-700">
+                                {stats.total > 0 ? ((stats.cancelAtPeriodEnd / stats.total) * 100).toFixed(1) : 0}% of total
+                            </div>
+                            <div className="text-xs text-red-600 mt-2">
+                                Will cancel at period end
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Expiring This Month */}
+                    {stats.expiringThisMonth > 0 && (
+                        <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div className="flex items-center">
+                                <Clock className="w-5 h-5 text-yellow-600 mr-2" />
+                                <div>
+                                    <h3 className="font-medium text-yellow-900">Expiring This Month</h3>
+                                    <p className="text-sm text-yellow-700">
+                                        {stats.expiringThisMonth} subscriptions are expiring this month and may need renewal attention.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Report Footer */}
             <div className="border-t border-gray-200 pt-4 text-center text-xs text-gray-500">
-                <p>This report was generated automatically from payment transaction data</p>
+                <p>This report was generated automatically from subscription data</p>
                 <p>Generated on {new Date().toLocaleString()}</p>
             </div>
         </div>
@@ -696,11 +798,11 @@ const PaymentsReportPage = () => {
                         <div className="mb-8">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h1 className="text-3xl font-bold text-gray-900">Payments Report Generator</h1>
-                                    <p className="text-gray-600 mt-2">Create comprehensive financial reports from payment data</p>
+                                    <h1 className="text-3xl font-bold text-gray-900">Subscription Report Generator</h1>
+                                    <p className="text-gray-600 mt-2">Create comprehensive subscription management reports</p>
                                 </div>
                                 <button
-                                    onClick={fetchPayments}
+                                    onClick={fetchSubscriptions}
                                     className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors flex items-center space-x-2"
                                 >
                                     <RefreshCw className="w-4 h-4" />
@@ -808,16 +910,25 @@ const PaymentsReportPage = () => {
                                                     onChange={(e) => setReportConfig(prev => ({ ...prev, includeTable: e.target.checked }))}
                                                     className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                                                 />
-                                                <span className="ml-2 text-sm text-gray-700">Detailed Payment Table</span>
+                                                <span className="ml-2 text-gray-700">Detailed Subscription Table</span>
                                             </label>
                                             <label className="flex items-center">
                                                 <input
                                                     type="checkbox"
-                                                    checked={reportConfig.includeUserBreakdown}
-                                                    onChange={(e) => setReportConfig(prev => ({ ...prev, includeUserBreakdown: e.target.checked }))}
+                                                    checked={reportConfig.includeRetentionAnalysis}
+                                                    onChange={(e) => setReportConfig(prev => ({ ...prev, includeRetentionAnalysis: e.target.checked }))}
                                                     className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                                                 />
-                                                <span className="ml-2 text-sm text-gray-700">User & Subscription Analysis</span>
+                                                <span className="ml-2 text-sm text-gray-700">Retention & Risk Analysis</span>
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={reportConfig.includePlanBreakdown}
+                                                    onChange={(e) => setReportConfig(prev => ({ ...prev, includePlanBreakdown: e.target.checked }))}
+                                                    className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                                                />
+                                                <span className="ml-2 text-sm text-gray-700">Plan Performance Analysis</span>
                                             </label>
                                         </div>
                                     </div>
@@ -837,7 +948,7 @@ const PaymentsReportPage = () => {
                                         <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                         <input
                                             type="text"
-                                            placeholder="Search by user, email..."
+                                            placeholder="Search by user, email, plan..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
@@ -847,49 +958,60 @@ const PaymentsReportPage = () => {
 
                                 {/* Status Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Subscription Status</label>
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                                     >
                                         <option value="all">All Statuses</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="requires_action">Requires Action</option>
-                                        <option value="succeeded">Succeeded</option>
-                                        <option value="failed">Failed</option>
+                                        <option value="active">Active</option>
+                                        <option value="past_due">Past Due</option>
+                                        <option value="unpaid">Unpaid</option>
                                         <option value="canceled">Canceled</option>
+                                        <option value="incomplete">Incomplete</option>
+                                        <option value="incomplete_expired">Incomplete Expired</option>
+                                        <option value="trialing">Trialing</option>
                                     </select>
                                 </div>
 
-                                {/* Approval Filter */}
+                                {/* Plan Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Approval Status</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Subscription Plan</label>
                                     <select
-                                        value={approvalFilter}
-                                        onChange={(e) => setApprovalFilter(e.target.value)}
+                                        value={planFilter}
+                                        onChange={(e) => setPlanFilter(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                                    >
+                                        <option value="all">All Plans</option>
+                                        {uniquePlans.map(plan => (
+                                            <option key={plan.id} value={plan.id.toString()}>
+                                                {plan.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Cancellation Filter */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Cancellation Status</label>
+                                    <select
+                                        value={cancelationFilter}
+                                        onChange={(e) => setCancelationFilter(e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                                     >
                                         <option value="all">All</option>
-                                        <option value="requires_approval">Requires Approval</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="not_approved">Not Approved</option>
+                                        <option value="active_renewal">Active Renewal</option>
+                                        <option value="cancel_at_period_end">Cancel at Period End</option>
+                                        <option value="canceled">Already Canceled</option>
                                     </select>
-                                </div>
-
-                                {/* Results Count */}
-                                <div className="flex items-end">
-                                    <div className="text-sm text-gray-500">
-                                        <p className="font-medium">{filteredPayments.length} payments</p>
-                                        <p>Total Value: {formatPrice(stats.totalRevenue, 'usd')}</p>
-                                    </div>
                                 </div>
                             </div>
 
-                            {/* Updated Date Range Filters */}
+                            {/* Date Range Filters */}
                             <div className="border-t border-gray-200 pt-4">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-medium text-gray-700">Date Range Filter</h3>
+                                    <h3 className="text-sm font-medium text-gray-700">Date Range Filter (Creation Date)</h3>
                                     {(dateRange.fromDate || dateRange.toDate) && (
                                         <button
                                             onClick={clearDateFilters}
@@ -911,7 +1033,6 @@ const PaymentsReportPage = () => {
                                                 value={dateRange.fromDate}
                                                 onChange={(e) => handleFromDateChange(e.target.value)}
                                                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                                                placeholder="Select start date"
                                             />
                                         </div>
                                     </div>
@@ -925,8 +1046,7 @@ const PaymentsReportPage = () => {
                                                 value={dateRange.toDate}
                                                 onChange={(e) => handleToDateChange(e.target.value)}
                                                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                                                placeholder="Select end date"
-                                                min={dateRange.fromDate} // Ensure to date is not before from date
+                                                min={dateRange.fromDate}
                                             />
                                         </div>
                                     </div>
@@ -938,7 +1058,7 @@ const PaymentsReportPage = () => {
                                         <div className="flex items-center">
                                             <Calendar className="w-4 h-4 text-blue-600 mr-2" />
                                             <span className="text-sm text-blue-800">
-                                                Filtering payments {
+                                                Filtering subscriptions created {
                                                     dateRange.fromDate && dateRange.toDate
                                                         ? `from ${dateRange.fromDate} to ${dateRange.toDate}`
                                                         : dateRange.fromDate
@@ -950,6 +1070,14 @@ const PaymentsReportPage = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Results Summary */}
+                            <div className="border-t border-gray-200 pt-4 mt-4">
+                                <div className="text-sm text-gray-500">
+                                    <p className="font-medium">{filteredSubscriptions.length} subscriptions found</p>
+                                    <p>Monthly Revenue: {formatPrice(stats.totalMRR, 'usd')} • Active Rate: {stats.activeRate}%</p>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Current Statistics Preview */}
@@ -957,10 +1085,10 @@ const PaymentsReportPage = () => {
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center">
                                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <CreditCard className="w-6 h-6 text-blue-600" />
+                                        <Users className="w-6 h-6 text-blue-600" />
                                     </div>
                                     <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-500">Total Payments</p>
+                                        <p className="text-sm font-medium text-gray-500">Total Subscriptions</p>
                                         <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
                                     </div>
                                 </div>
@@ -969,11 +1097,11 @@ const PaymentsReportPage = () => {
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center">
                                     <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                        <DollarSign className="w-6 h-6 text-green-600" />
+                                        <CheckCircle className="w-6 h-6 text-green-600" />
                                     </div>
                                     <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                                        <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.totalRevenue, 'usd')}</p>
+                                        <p className="text-sm font-medium text-gray-500">Active Subscriptions</p>
+                                        <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
                                     </div>
                                 </div>
                             </div>
@@ -981,11 +1109,11 @@ const PaymentsReportPage = () => {
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center">
                                     <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                        <TrendingUp className="w-6 h-6 text-purple-600" />
+                                        <DollarSign className="w-6 h-6 text-purple-600" />
                                     </div>
                                     <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-500">Success Rate</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats.successRate}%</p>
+                                        <p className="text-sm font-medium text-gray-500">Monthly Revenue</p>
+                                        <p className="text-2xl font-bold text-gray-900">{formatPrice(stats.totalMRR, 'usd')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -993,11 +1121,11 @@ const PaymentsReportPage = () => {
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center">
                                     <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                                        <Clock className="w-6 h-6 text-orange-600" />
+                                        <TrendingDown className="w-6 h-6 text-orange-600" />
                                     </div>
                                     <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-500">Pending Approval</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats.requiresApproval}</p>
+                                        <p className="text-sm font-medium text-gray-500">Churn Rate</p>
+                                        <p className="text-2xl font-bold text-gray-900">{stats.churnRate}%</p>
                                     </div>
                                 </div>
                             </div>
@@ -1007,14 +1135,14 @@ const PaymentsReportPage = () => {
                         <div className="text-center">
                             <button
                                 onClick={generateReport}
-                                disabled={filteredPayments.length === 0}
+                                disabled={filteredSubscriptions.length === 0}
                                 className="px-8 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 mx-auto"
                             >
                                 <FileText className="w-5 h-5" />
                                 <span>Generate Report</span>
                             </button>
-                            {filteredPayments.length === 0 && (
-                                <p className="text-sm text-gray-500 mt-2">No payment data available for the selected filters</p>
+                            {filteredSubscriptions.length === 0 && (
+                                <p className="text-sm text-gray-500 mt-2">No subscription data available for the selected filters</p>
                             )}
                         </div>
                     </>
@@ -1073,4 +1201,4 @@ const PaymentsReportPage = () => {
     );
 };
 
-export default PaymentsReportPage;
+export default SubscriptionReportPage;

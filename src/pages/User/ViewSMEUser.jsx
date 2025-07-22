@@ -83,12 +83,10 @@ const AllUsersAccountsPage = () => {
         }
     };
 
-    // Load users on component mount
     useEffect(() => {
         fetchUsers();
     }, []);
 
-    // Toast notification simulation
     const showToast = (message, type = 'info') => {
         switch (type) {
             case 'success':

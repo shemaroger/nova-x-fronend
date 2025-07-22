@@ -140,6 +140,120 @@ const storeAuthData = (responseData) => {
     }
 };
 
+
+
+
+
+
+export const createHelpSupport = async (data) => {
+    try {
+        const response = await api.post('/help-support/', data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const getAllHelpSupport = async (params = {}) => {
+    try {
+        const response = await api.get('/help-support/', {
+            params: params,
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const updateHelpSupport = async (id, data) => {
+    try {
+        const response = await api.put(`/help-support/${id}/`, data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+
+export const getAllChats = async (params = {}) => {
+    try {
+        const response = await api.get('/support-chat/', { params });
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+export const get_conversation = async () => {
+    try {
+        const response = await api.get('/support-chat/get_conversation/');
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+get_conversation
+
+// Get a single chat message by ID
+export const getChatById = async (id) => {
+    try {
+        const response = await api.get(`/support-chat/${id}/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Send a new message (sender is handled on backend using logged-in user)
+export const sendquely = async (data) => {
+    try {
+        const response = await api.post('/support-chat/', data);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+// Update specific fields of an existing message
+export const updateMessage = async (data) => {
+    try {
+        const response = await api.post('/support-chat/update_column/', data);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+// Delete a chat message
+export const deleteMessage = async (id) => {
+    try {
+        const response = await api.delete(`/support-chat/${id}/`);
+        return response.data;
+    } catch (error) {
+        throw handleError(error);
+    }
+};
+
+
+
+
+
+
+
+
+
 // =================== AUTH ENDPOINTS ===================
 
 // Investor Registration
@@ -186,6 +300,18 @@ export const registerSME = async (userData) => {
         throw handleError(error);
     }
 };
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Business Registration
 export const registerBusiness = async (userData) => {
@@ -703,6 +829,18 @@ export const createNotification = async (notificationData) => {
 export const getMySubscription = async () => {
     try {
         const response = await api.get('/subscriptions/me/');
+        return response.data;
+    } catch (error) {
+        if (error.response && error.response.status === 404) {
+            return null;
+        }
+        throw error;
+    }
+};
+
+export const getSubscription = async () => {
+    try {
+        const response = await api.get('/subscriptions/all_subscriptions/');
         return response.data;
     } catch (error) {
         if (error.response && error.response.status === 404) {

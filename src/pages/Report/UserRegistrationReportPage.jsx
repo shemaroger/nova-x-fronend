@@ -36,6 +36,7 @@ const UserRegistrationReportPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
     // Report Configuration State
     const [reportConfig, setReportConfig] = useState({
         title: 'User Registration Report',
@@ -46,14 +47,16 @@ const UserRegistrationReportPage = () => {
         includeTable: true,
         includeSummary: true
     });
-    // Date Range State
+
+    // Date Range State - Updated to use direct date inputs
     const [dateRange, setDateRange] = useState({
         startDate: '',
-        endDate: '',
-        preset: 'all'
+        endDate: ''
     });
+
     // Show report preview
     const [showReportPreview, setShowReportPreview] = useState(false);
+
     // Toast notification function
     const showToast = (message, type = 'info') => {
         console.log(`${type.toUpperCase()}: ${message}`);
@@ -81,10 +84,12 @@ const UserRegistrationReportPage = () => {
     // Apply filters
     const applyFilters = (logsData = logs) => {
         let filtered = logsData;
+
         // Filter by status
         if (statusFilter !== 'all') {
             filtered = filtered.filter(log => log.status === statusFilter);
         }
+
         // Filter by search term
         if (searchTerm) {
             filtered = filtered.filter(log =>
@@ -93,41 +98,28 @@ const UserRegistrationReportPage = () => {
                 log.user_agent?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
+
         // Filter by date range
         if (dateRange.startDate && dateRange.endDate) {
             const startDate = new Date(dateRange.startDate);
             const endDate = new Date(dateRange.endDate);
             endDate.setHours(23, 59, 59, 999); // Include the entire end date
+
             filtered = filtered.filter(log => {
                 const logDate = new Date(log.created_at);
                 return logDate >= startDate && logDate <= endDate;
             });
-        } else if (dateRange.preset !== 'all') {
-            const now = new Date();
-            const filterDate = new Date();
-            switch (dateRange.preset) {
-                case 'today':
-                    filterDate.setHours(0, 0, 0, 0);
-                    break;
-                case 'week':
-                    filterDate.setDate(now.getDate() - 7);
-                    break;
-                case 'month':
-                    filterDate.setMonth(now.getMonth() - 1);
-                    break;
-                case 'quarter':
-                    filterDate.setMonth(now.getMonth() - 3);
-                    break;
-                case 'year':
-                    filterDate.setFullYear(now.getFullYear() - 1);
-                    break;
-                default:
-                    break;
-            }
-            if (dateRange.preset !== 'all') {
-                filtered = filtered.filter(log => new Date(log.created_at) >= filterDate);
-            }
+        } else if (dateRange.startDate) {
+            // Filter from start date onwards
+            const startDate = new Date(dateRange.startDate);
+            filtered = filtered.filter(log => new Date(log.created_at) >= startDate);
+        } else if (dateRange.endDate) {
+            // Filter up to end date
+            const endDate = new Date(dateRange.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            filtered = filtered.filter(log => new Date(log.created_at) <= endDate);
         }
+
         setFilteredLogs(filtered);
     };
 
@@ -135,23 +127,26 @@ const UserRegistrationReportPage = () => {
         applyFilters();
     }, [logs, searchTerm, statusFilter, dateRange]);
 
-    // Handle date preset change
-    const handleDatePresetChange = (preset) => {
-        setDateRange({
-            ...dateRange,
-            preset,
-            startDate: '',
-            endDate: ''
-        });
+    // Handle date range changes
+    const handleDateFromChange = (date) => {
+        setDateRange(prev => ({
+            ...prev,
+            startDate: date
+        }));
     };
 
-    // Handle custom date range
-    const handleCustomDateRange = (startDate, endDate) => {
+    const handleDateToChange = (date) => {
+        setDateRange(prev => ({
+            ...prev,
+            endDate: date
+        }));
+    };
+
+    // Clear date filters
+    const clearDateFilters = () => {
         setDateRange({
-            ...dateRange,
-            preset: 'custom',
-            startDate,
-            endDate
+            startDate: '',
+            endDate: ''
         });
     };
 
@@ -263,11 +258,6 @@ const UserRegistrationReportPage = () => {
         setShowReportPreview(true);
     };
 
-    // Export report as PDF (placeholder function)
-    const exportToPDF = () => {
-        showToast('PDF export functionality would be implemented with a PDF library', 'info');
-    };
-
     // Print report
     const printReport = () => {
         window.print();
@@ -311,9 +301,11 @@ const UserRegistrationReportPage = () => {
                         <p>Report Period: {
                             dateRange.startDate && dateRange.endDate
                                 ? `${dateRange.startDate} to ${dateRange.endDate}`
-                                : dateRange.preset === 'all'
-                                    ? 'All Time'
-                                    : dateRange.preset.charAt(0).toUpperCase() + dateRange.preset.slice(1)
+                                : dateRange.startDate
+                                    ? `From ${dateRange.startDate}`
+                                    : dateRange.endDate
+                                        ? `Until ${dateRange.endDate}`
+                                        : 'All Time'
                         }</p>
                     </div>
                 </div>
@@ -597,7 +589,7 @@ const UserRegistrationReportPage = () => {
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Filters</h2>
 
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                                 {/* Search */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -626,54 +618,48 @@ const UserRegistrationReportPage = () => {
                                         <option value="failed">Failed</option>
                                     </select>
                                 </div>
-                                {/* Date Preset */}
+                                {/* Date From */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
-                                    <select
-                                        value={dateRange.preset}
-                                        onChange={(e) => handleDatePresetChange(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                                    >
-                                        <option value="all">All Time</option>
-                                        <option value="today">Today</option>
-                                        <option value="week">Last 7 Days</option>
-                                        <option value="month">Last 30 Days</option>
-                                        <option value="quarter">Last 3 Months</option>
-                                        <option value="year">Last Year</option>
-                                        <option value="custom">Custom Range</option>
-                                    </select>
-                                </div>
-                                {/* Results Count */}
-                                <div className="flex items-end">
-                                    <div className="text-sm text-gray-500">
-                                        <p className="font-medium">{filteredLogs.length} records</p>
-                                        <p>matching filters</p>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Custom Date Range */}
-                            {dateRange.preset === 'custom' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+                                    <div className="relative">
+                                        <Calendar className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                         <input
                                             type="date"
                                             value={dateRange.startDate}
-                                            onChange={(e) => handleCustomDateRange(e.target.value, dateRange.endDate)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                                        <input
-                                            type="date"
-                                            value={dateRange.endDate}
-                                            onChange={(e) => handleCustomDateRange(dateRange.startDate, e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                                            onChange={(e) => handleDateFromChange(e.target.value)}
+                                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                                         />
                                     </div>
                                 </div>
-                            )}
+                                {/* Date To */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+                                    <div className="relative">
+                                        <Calendar className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="date"
+                                            value={dateRange.endDate}
+                                            onChange={(e) => handleDateToChange(e.target.value)}
+                                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                                        />
+                                    </div>
+                                </div>
+                                {/* Results Count and Clear */}
+                                <div className="flex flex-col justify-end">
+                                    <div className="text-sm text-gray-500 mb-2">
+                                        <p className="font-medium">{filteredLogs.length} records</p>
+                                        <p>matching filters</p>
+                                    </div>
+                                    {(dateRange.startDate || dateRange.endDate) && (
+                                        <button
+                                            onClick={clearDateFilters}
+                                            className="text-xs text-violet-600 hover:text-violet-800 underline"
+                                        >
+                                            Clear dates
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                         {/* Current Statistics */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -756,9 +742,8 @@ const UserRegistrationReportPage = () => {
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                                 >
                                     <Printer className="w-4 h-4" />
-                                    <span>Export PDF </span>
+                                    <span>Export PDF</span>
                                 </button>
-
                             </div>
                         </div>
                         {/* Report Preview */}
