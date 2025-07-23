@@ -580,7 +580,7 @@ const InvestmentPage = () => {
         // Apply date range filter
         if (filters.dateRange !== 'all') {
             const now = new Date();
-            const filterDate = new Date();
+            let filterDate = new Date();
 
             switch (filters.dateRange) {
                 case 'last7days':
